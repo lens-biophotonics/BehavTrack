@@ -20,16 +20,6 @@ It performs the following main steps:
 4. Output:
    - The function returns a dictionary mapping each video filename to the selected frame indices and their respective clusters.
    - This result can be used downstream for annotation, tracking, and behavioral analysis.
-
-Future Integrations:
-- Annotation: After obtaining representative frames, users or automated tools can annotate frames (e.g., label mouse behaviors).
-- Tracking: Integrate object detection or pose estimation models to track mouse positions and poses over selected frames.
-- Behavioral Analysis: Use the selected frames and their annotations/tracking data to classify behaviors or identify patterns.
-
-To integrate such future functionalities:
-- Consider adding functions that load pre-trained models, run inference on frames, and store results.
-- Implement feature extraction methods that incorporate detection/tracking results as additional frame-level features.
-- Expand the clustering or sampling steps to consider behavioral states or previously defined annotations.
 """
 
 import os
