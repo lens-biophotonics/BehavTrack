@@ -12,6 +12,7 @@ It uses PySide6 (Qt for Python) to present a window where users can:
 4. Run the stratified sampling in the background, showing progress updates directly in the UI.
 5. After completion, browse through the selected frames, grouped by cluster.
 6. Preview the selected frames (as images) on the right side of the UI.
+7. Save the selected frames and their metadata into a 'frames' folder along with a JSON file.
 
 The application integrates with the `frame_sampling` module for logic and performs all heavy work in a background thread
 to keep the UI responsive.
@@ -20,12 +21,15 @@ to keep the UI responsive.
 import sys
 import os
 import cv2
+import json
 import numpy as np
 
-from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout,
-                               QHBoxLayout, QPushButton, QLineEdit, QLabel,
-                               QFileDialog, QSpinBox, QTableWidget, QTableWidgetItem,
-                               QHeaderView, QGroupBox, QFormLayout, QMessageBox, QSplitter, QComboBox, QProgressBar)
+from PySide6.QtWidgets import (
+    QMainWindow, QWidget, QVBoxLayout, 
+    QHBoxLayout, QPushButton, QLineEdit, QLabel, 
+    QFileDialog, QSpinBox, QTableWidget, QTableWidgetItem, 
+    QHeaderView, QGroupBox, QFormLayout, QMessageBox, QSplitter, QComboBox, QProgressBar
+)
 from PySide6.QtCore import Qt, QRunnable, QThreadPool, Signal, Slot, QObject
 from PySide6.QtGui import QPixmap, QImage
 
@@ -95,10 +99,118 @@ class Worker(QRunnable):
             self.signals.error.emit(str(e))
 
 
+class SaveWorker(QRunnable):
+    """
+    SaveWorker is a QRunnable that handles saving selected frames and their metadata in a separate thread.
+
+    It performs the following tasks:
+    - Saves each selected frame as an image file in the specified 'frames' directory.
+    - Compiles metadata for each frame and saves it into a JSON file.
+    
+    Initialization Parameters:
+    - save_dir (str): The directory where frames and JSON will be saved.
+    - all_rows (list): List of tuples containing (video_name, frame_idx, cluster).
+    - video_folder (str): The path to the folder containing the original video files.
+    """
+
+    class SaveSignals(QObject):
+        """
+        SaveSignals defines Qt signals for the SaveWorker.
+
+        Signals:
+        - finished: Emitted when saving is complete.
+        - error: Emitted with a string error message if an exception occurs during saving.
+        - progress: Emitted with an integer (0-100) to update the progress bar.
+        """
+        finished = Signal()
+        error = Signal(str)
+        progress = Signal(int)
+
+    def __init__(self, save_dir, all_rows, video_folder):
+        super().__init__()
+        self.save_dir = save_dir
+        self.all_rows = all_rows
+        self.video_folder = video_folder
+        self.signals = self.SaveSignals()
+
+    def run(self):
+        """
+        Executes the saving process:
+        1. Creates the 'frames' directory if it doesn't exist.
+        2. Iterates over all selected frames, saves each as an image file.
+        3. Compiles metadata and saves it into a JSON file.
+        """
+        try:
+            # Create 'frames' directory if it doesn't exist
+            os.makedirs(self.save_dir, exist_ok=True)
+
+            frames_info = []
+            total_frames = len(self.all_rows)
+            for idx, (vid, frame_idx, cluster) in enumerate(self.all_rows, start=1):
+                # Construct paths
+                video_path = os.path.join(self.video_folder, vid)
+                frame = self.load_frame(video_path, frame_idx)
+                if frame is None:
+                    raise ValueError(f"Could not load frame {frame_idx} from {vid}.")
+
+                # Define a unique filename for the frame image
+                frame_filename = f"{os.path.splitext(vid)[0]}_frame_{frame_idx}.jpg"
+                frame_path = os.path.join(self.save_dir, frame_filename)
+
+                # Save the frame as an image file
+                cv2.imwrite(frame_path, frame)
+
+                # Append frame info to the list
+                frames_info.append({
+                    "video": vid,
+                    "frame_index": frame_idx,
+                    "cluster": cluster,
+                    "image_path": frame_path
+                })
+
+                # Emit progress
+                progress_percent = int((idx / total_frames) * 100)
+                self.signals.progress.emit(progress_percent)
+
+            # Save frames_info as JSON
+            json_path = os.path.join(self.save_dir, "frames_info.json")
+            with open(json_path, 'w') as json_file:
+                json.dump(frames_info, json_file, indent=4)
+
+            # Emit finished signal
+            self.signals.finished.emit()
+
+        except Exception as e:
+            # Emit error signal if any exception occurs
+            self.signals.error.emit(str(e))
+
+    def load_frame(self, video_path, frame_index):
+        """
+        Loads a single frame from the specified video at the given index.
+
+        Parameters:
+        - video_path (str): Path to the video file.
+        - frame_index (int): The index of the frame to load.
+
+        Returns:
+        - frame (np.ndarray, BGR): The loaded frame.
+        - None if the frame could not be loaded.
+        """
+        cap = cv2.VideoCapture(video_path)
+        if not cap.isOpened():
+            return None
+        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
+        ret, frame = cap.read()
+        cap.release()
+        if not ret:
+            return None
+        return frame
+
+
 class MainWindow(QMainWindow):
     """
     MainWindow is the primary UI class. It sets up:
-    - A left panel with controls (folder selection, parameters, run button, progress bar, clusters combo, table of frames).
+    - A left panel with controls (folder selection, parameters, run/save buttons, progress bar, clusters combo, table of frames).
     - A right panel that displays a selected frame as an image.
 
     The UI flow:
@@ -111,11 +223,12 @@ class MainWindow(QMainWindow):
     4. After completion, the UI displays the selected frames in a table, sorted by video and clustered.
     5. The user can select a cluster from the combo box to filter displayed frames.
     6. Clicking a frame in the table shows that frame on the right panel.
+    7. The user can click "Save" to save all selected frames and their metadata into a 'frames' folder.
     """
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Stratified Frame Selector")
+        self.setWindowTitle("BehavTracker")
 
         # Thread pool for running background tasks without freezing the UI.
         self.thread_pool = QThreadPool()
@@ -219,6 +332,13 @@ class MainWindow(QMainWindow):
         self.result_table.itemSelectionChanged.connect(self.on_frame_selection_changed)
         left_layout.addWidget(self.result_table)
 
+        # SAVE BUTTON:
+        # Allows the user to save selected frames and their metadata.
+        self.save_button = QPushButton("Save")
+        self.save_button.clicked.connect(self.save_selected_frames)
+        self.save_button.setEnabled(False)  # Enabled after frames are loaded
+        left_layout.addWidget(self.save_button)
+
         # RIGHT PANEL SETUP:
         # The right panel shows the currently selected frame as an image.
         right_layout = QVBoxLayout(right_widget)
@@ -311,6 +431,7 @@ class MainWindow(QMainWindow):
         k = self.k_spin.value()
         frame_skip = self.frame_skip_spin.value()
 
+        # Check if we can extract at least n frames with the chosen frame_skip
         total_extracted = self.estimate_total_frames(video_folder, frame_skip)
         if total_extracted < n:
             # If we don't have enough frames to meet the requested 'n', warn the user.
@@ -323,6 +444,7 @@ class MainWindow(QMainWindow):
 
         # Disable UI components during processing.
         self.run_button.setEnabled(False)
+        self.save_button.setEnabled(False)
         self.cluster_combo.clear()
         self.cluster_combo.setEnabled(False)
         self.result_table.setRowCount(0)
@@ -392,6 +514,10 @@ class MainWindow(QMainWindow):
         self.show_frames_for_cluster(None)
         self.result_table.setEnabled(True)
 
+        # Enable the Save button since frames are now loaded
+        if self.all_rows:
+            self.save_button.setEnabled(True)
+
     @Slot(str)
     def on_error(self, error_message):
         """
@@ -401,6 +527,7 @@ class MainWindow(QMainWindow):
         - Show an error message box.
         """
         self.run_button.setEnabled(True)
+        self.save_button.setEnabled(False)
         self.progress_bar.setVisible(False)
         QMessageBox.critical(self, "Error", error_message)
         self.statusBar().showMessage("Error encountered.")
@@ -492,22 +619,101 @@ class MainWindow(QMainWindow):
         qimg = QImage(frame_rgb.data, w, h, bytes_per_line, QImage.Format_RGB888)
         pixmap = QPixmap.fromImage(qimg)
         # Scale the image to fit the label while maintaining aspect ratio.
-        self.image_label.setPixmap(pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        self.image_label.setPixmap(pixmap.scaled(
+            self.image_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation
+        ))
 
     def load_frame(self, video_path, frame_index):
         """
-        Loads a single frame from the video at the given frame_index.
+        Loads a single frame from the specified video at the given index.
+
+        Parameters:
+        - video_path (str): Path to the video file.
+        - frame_index (int): The index of the frame to load.
+
         Returns:
-        - frame (np.ndarray, BGR): If successful
+        - frame (np.ndarray, BGR): The loaded frame.
         - None if the frame could not be loaded.
         """
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
             return None
-        # Set the video position to the desired frame.
         cap.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
         ret, frame = cap.read()
         cap.release()
         if not ret:
             return None
         return frame
+
+    def save_selected_frames(self):
+        """
+        Initiates the saving process for all selected frames.
+        - Prompts the user to select a save directory (defaults to 'frames' folder in video folder).
+        - Starts a SaveWorker to handle the saving in a background thread.
+        - Updates the progress bar to reflect saving progress.
+        """
+        if not self.all_rows:
+            QMessageBox.warning(self, "Warning", "No frames to save.")
+            return
+
+        # Prompt user to select save directory, default to 'frames' folder within video folder
+        video_folder = self.folder_line_edit.text().strip()
+        default_save_dir = os.path.join(video_folder, "frames")
+        save_dir = QFileDialog.getExistingDirectory(
+            self, "Select Save Directory", default_save_dir
+        )
+        if not save_dir:
+            return  # User canceled
+
+        # Disable UI components during saving
+        self.save_button.setEnabled(False)
+        self.run_button.setEnabled(False)
+        self.cluster_combo.setEnabled(False)
+        self.result_table.setEnabled(False)
+        self.statusBar().showMessage("Saving frames...")
+
+        # Show and reset progress bar
+        self.progress_bar.setValue(0)
+        self.progress_bar.setVisible(True)
+
+        # Create a SaveWorker to handle saving
+        save_worker = SaveWorker(save_dir, self.all_rows, video_folder)
+        # Connect signals from SaveWorker to UI slots
+        save_worker.signals.finished.connect(self.on_save_finished)
+        save_worker.signals.error.connect(self.on_save_error)
+        save_worker.signals.progress.connect(self.on_progress)
+
+        # Start the SaveWorker in the thread pool
+        self.thread_pool.start(save_worker)
+
+    @Slot()
+    def on_save_finished(self):
+        """
+        Called when the SaveWorker finishes successfully.
+        - Re-enable UI components.
+        - Hide the progress bar.
+        - Inform the user of successful saving.
+        """
+        self.save_button.setEnabled(True)
+        self.run_button.setEnabled(True)
+        self.cluster_combo.setEnabled(True)
+        self.result_table.setEnabled(True)
+        self.statusBar().showMessage("Frames and metadata saved successfully.")
+        self.progress_bar.setVisible(False)
+        QMessageBox.information(self, "Success", "Frames and metadata have been saved successfully.")
+
+    @Slot(str)
+    def on_save_error(self, error_message):
+        """
+        Called if the SaveWorker encounters an error.
+        - Re-enable UI components.
+        - Hide the progress bar.
+        - Show an error message box.
+        """
+        self.save_button.setEnabled(True)
+        self.run_button.setEnabled(True)
+        self.cluster_combo.setEnabled(True)
+        self.result_table.setEnabled(True)
+        self.progress_bar.setVisible(False)
+        QMessageBox.critical(self, "Error", f"An error occurred while saving:\n{error_message}")
+        self.statusBar().showMessage("Error encountered during saving.")
