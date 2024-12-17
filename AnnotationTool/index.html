@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Annotation Tool</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Toolbar -->
+  <div id="toolbar">
+    <p id="modeDisplay">Mode: Bounding Box</p>
+    <button id="folderInput">Load Folder</button>
+    <button id="prevBtn">Previous</button>
+    <button id="nextBtn">Next</button>
+  </div>
+
+  <!-- Main Container -->
+  <div id="annotationContainer">
+    <div id="fileListContainer">
+        <h3>Files</h3>
+        <div id="fileList"></div>
+        <div id="progressDisplay"></div>
+      </div>
+    <!-- Canvas Container -->
+    <div id="canvasContainer">
+      <canvas id="annotationCanvas" width="800" height="600"></canvas>
+    </div>
+
+    <!-- Annotation List -->
+    <div id="annotationList">
+      <h3>Annotations</h3>
+      <div id="annotationItems"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
