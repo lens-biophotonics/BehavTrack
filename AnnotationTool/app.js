@@ -143,11 +143,25 @@ function drawAnnotations() {
 
 // Save annotations to the JSON file
 async function saveAnnotations() {
+  const imageName = images[currentImageIndex].name;
+
+  // Sort keypoints in each bounding box by the desired order
+  if (annotations[imageName]) {
+    annotations[imageName].forEach(annotation => {
+      const sortedKeypoints = {};
+      keypoints.forEach(key => {
+        if (key in annotation.keypoints) {
+          sortedKeypoints[key] = annotation.keypoints[key];
+        }
+      });
+      annotation.keypoints = sortedKeypoints;
+    });
+  }
+
+  // Save to annotation.json
   const writable = await annotationFileHandle.createWritable();
   await writable.write(JSON.stringify(annotations, null, 2));
   await writable.close();
-
-  updateFileListAndProgress();
 }
 
 // Update the annotation list on the right side
