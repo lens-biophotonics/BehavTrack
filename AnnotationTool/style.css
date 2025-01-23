@@ -27,6 +27,8 @@ body {
     font-weight: 600;
     color: #555;
   }
+
+
   
   /* Main annotation container */
   #annotationContainer {
@@ -55,7 +57,7 @@ body {
   #fileList div {
     padding: 10px;
     margin: 5px 0;
-    background-color: #ffffff;
+    background-color: #f4f4f4;/* #ffffff; */
     border: 1px solid #e0e0e0;
     border-radius: 4px;
     font-size: 0.95em;
@@ -64,12 +66,11 @@ body {
   }
   
   #fileList div:hover {
-    background-color: #f4f4f4;
+    background-color: #77aaaa;
   }
   
   #fileList div.selected {
-    background-color: #007bff;
-    color: #ffffff;
+    background-color: #a0e0e9;
     font-weight: 600;
   }
   
@@ -107,7 +108,7 @@ body {
     overflow-y: auto;
   }
   
-  #annotationList h3 {
+  #annotationList h3, h4 {
     font-size: 1.1em;
     font-weight: 600;
     color: #555;
@@ -115,7 +116,7 @@ body {
   }
   
   .annotationItem {
-    display: flex;
+    /* display: flex; */
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
