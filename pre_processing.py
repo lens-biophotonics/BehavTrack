@@ -161,3 +161,8 @@ def main():
             if "aria" in video_file.lower():
                 duration = get_video_duration(source_dir, video_file)
             process_video(source_dir, output_dir, video_file, overwrite, duration, w=min_w, h=min_h)
+
+            
+
+if __name__ == "__main__":
+    main()
