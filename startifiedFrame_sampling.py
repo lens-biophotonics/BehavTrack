@@ -252,11 +252,11 @@ def main():
       2) Saves the selected frames & metadata.
     """
     # -- 1. Set your parameters here --
-    video_folder = "path/to/your/videos"
-    n = 50
-    k = 5
-    frame_skip = 30
-    output_folder = "frames_output"
+    video_folder = "/home/jalal/projects/data/neurocig/vids/processed"
+    n = 2000
+    k = 8
+    frame_skip = 50
+    output_folder = "/home/jalal/projects/data/neurocig/frames"
 
     # -- 2. Run stratified frame selection --
     results = stratified_frame_selection(
