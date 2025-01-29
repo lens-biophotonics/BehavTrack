@@ -202,7 +202,7 @@ function drawAnnotations() {
       // `coords` is an array containing the X and Y coordinates of the keypoint
 
       if (coords[2] == 1) { // if the keypoint invisible 
-        ctx.fillStyle = "gray"; // Set the fill color for the keypoint to yellow #8b930a
+        ctx.fillStyle = "orange"; // Set the fill color for the keypoint to yellow #8b930a
         ctx.beginPath(); // Begin a new path for the keypoint circle
         ctx.arc(
           coords[0], // X-coordinate of the keypoint
