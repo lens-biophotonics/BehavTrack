@@ -42,18 +42,27 @@ body {
   #fileListContainer {
     flex: 1;
     padding: 15px;
+    padding-top: 0px;
     background-color: #ffffff;
     border-right: 1px solid #e0e0e0;
     overflow-y: auto;
   }
   
   #fileListContainer h3 {
+    top:0;
+    position: sticky;
+    padding: 5px;
     font-size: 1.1em;
     font-weight: 600;
     color: #555;
+    background-color: white;
     margin-bottom: 10px;
+    margin-top: 0px;
+    border-bottom: 1px black solid;
   }
-  
+
+
+
   #fileList div {
     padding: 10px;
     margin: 5px 0;
@@ -72,12 +81,6 @@ body {
   #fileList div.selected {
     background-color: #a0e0e9;
     font-weight: 600;
-  }
-  
-  #progressDisplay {
-    margin-top: 15px;
-    font-size: 0.95em;
-    color: #666;
   }
   
   /* Canvas container */
@@ -103,15 +106,22 @@ body {
   #annotationList {
     flex: 1;
     padding: 15px;
+    padding-top: 0px;
     background-color: #ffffff;
     border-left: 1px solid #e0e0e0;
     overflow-y: auto;
   }
   
-  #annotationList h3, h4 {
+  #annotationList h3 {
+    top:0;
+    position: sticky;
+    padding: 5px;
     font-size: 1.1em;
     font-weight: 600;
     color: #555;
+    background-color: white;
+    border-bottom: 1px black solid;
+    margin-top: 0px;
     margin-bottom: 10px;
   }
   

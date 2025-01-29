@@ -21,6 +21,7 @@ let annotationFileHandle = null; // File handle for reading/writing the annotati
 let undoStack = []; // Stack to keep track of changes for undo functionality
 let visibleKeypoint = false;
 let selectedBBoxIndex = 0;
+let framesComplete = [];
 
 // Function to update the mode display in the toolbar
 function updateModeDisplay() {
@@ -32,10 +33,16 @@ function updateModeDisplay() {
       : `Mode: Keypoint (${keypoints[currentKeypointIndex]}) - Visibility (${visibleKeypoint})`;
 }
 
-function updateSelectedBBoxDisplay(index) {
+function updateSelectedBBoxDisplay() {
+  // Get the name of the currently displayed image
+  const imageName = images[currentImageIndex].name;
+
+  // Retrieve the annotations for the current image, defaulting to an empty array if none exist
+  const imageAnnotations = annotations[imageName] || [];
+
   // Dynamically update the text displayed in the mode indicator based on the current mode
-  document.getElementById("selectedBBox").textContent =
-    `Selected Bounding Box: ${index+1}`;
+  document.getElementById("bBox").innerHTML =
+    `Annotations: ${imageAnnotations.length} <br /> Selected Bounding Box: ${selectedBBoxIndex+1}`;
 }
 
 
@@ -66,12 +73,25 @@ function updateFileListAndProgress() {
 
       // Assign a color to the file item based on its annotation completeness
       if (isComplete) {
-          fileItem.style.color = "green"; // Green indicates the frame is fully annotated
-      } else if (isPartial) {
+        if (!framesComplete.includes(imageName)) {
+          framesComplete.push(imageName)
+        }
+        fileItem.style.color = "green"; // Green indicates the frame is fully annotated
+      }else {
+        const index = framesComplete.indexOf(imageName);
+        if (index !== -1) {
+            framesComplete.splice(index, 1); // This removes the element and updates length
+        }
+
+        if (isPartial) {
           fileItem.style.color = "orange"; // Orange indicates the frame is partially annotated
-      } else {
+        } else {
           fileItem.style.color = "black"; // Gray indicates the frame has no annotations
+        }
       }
+
+      document.getElementById("frameProgress").innerHTML =
+      `Frames: ${framesComplete.length}/${images.length}`;
 
       // Add a click event to allow the user to select this image
       fileItem.addEventListener("click", () => {
@@ -324,6 +344,9 @@ function updateAnnotationList() {
     // Append the annotation item to the annotation list container
     annotationList.appendChild(annotationItem);
   });
+
+  updateFileListAndProgress();
+  updateSelectedBBoxDisplay();
 }
 
 
@@ -359,15 +382,15 @@ function selectBoundingBox(index) {
 
   selectedBBoxIndex = index;
 
-  highlightBoundingBox(index);
+  highlightBoundingBox();
 
-  updateSelectedBBoxDisplay(index);
+  updateSelectedBBoxDisplay();
 
 }
 
 
 // Function to visually highlight a specific bounding box on the canvas
-function highlightBoundingBox(index) {
+function highlightBoundingBox() {
   // Get the name of the currently displayed image
   const imageName = images[currentImageIndex].name;
 
@@ -375,7 +398,7 @@ function highlightBoundingBox(index) {
   const imageAnnotations = annotations[imageName] || [];
 
   // Get the specific annotation (bounding box) by its index
-  const annotation = imageAnnotations[index];
+  const annotation = imageAnnotations[selectedBBoxIndex];
 
   // If the annotation doesn't exist (e.g., invalid index), exit the function
   if (!annotation) return;

@@ -18,10 +18,11 @@
   <!-- Main Container -->
   <div id="annotationContainer">
     <div id="fileListContainer">
-        <h3>Files</h3>
-        <div id="fileList"></div>
-        <div id="progressDisplay"></div>
-      </div>
+      <h3  id="frameProgress">Frames</h3>
+      <div id="fileList"></div>
+    </div>
+
+ 
     <!-- Canvas Container -->
     <div id="canvasContainer">
       <canvas id="annotationCanvas" width="800px" height="600px"></canvas>
@@ -29,8 +30,8 @@
 
     <!-- Annotation List -->
     <div id="annotationList">
-      <h3>Annotations</h3>
-      <h3 id="selectedBBox">Selected Bounding Box: </h3>
+      <h3 id="bBox">Annotations <br />
+        Selected Bounding Box: </h3>
       <div id="annotationItems"></div>
     </div>
   </div>
