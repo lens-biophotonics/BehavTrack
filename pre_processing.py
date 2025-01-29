@@ -72,6 +72,15 @@ def get_video_resolution(filename):
     return (None, None)
 
 
+def get_frame_rate(filename):
+    metadata = FFProbe(filename)
+    for stream in metadata.streams:
+        if stream.is_video():
+            return int(stream.framerate)
+        
+    return None
+
+
 def get_video_duration(source_dir, video_file):
     """
     Returns (width, height) for the first video stream found in `filename`.
@@ -85,7 +94,7 @@ def get_video_duration(source_dir, video_file):
     return None
 
 
-def process_video(source_dir, output_dir, video_file, overwrite=True, duration=900, w='iw', h='ih'):
+def process_video(source_dir, output_dir, video_file, overwrite=True, duration=900,  fps=15, w='iw', h='ih'):
     """Trim video, apply uniform gamma correction and brightness adjustment, convert to grayscale."""
     # Define input and output paths
     input_path = os.path.join(source_dir, video_file)
@@ -105,7 +114,7 @@ def process_video(source_dir, output_dir, video_file, overwrite=True, duration=9
             .filter('format', 'gray')  # convert video to grayscale
             .filter('eq', gamma=1.8, brightness=0.17, contrast=1.3)  # EQ Adjustments
             .filter('scale', w,  h, flags='lanczos')  # Clamp pixel values
-            .output(output_path, vcodec="hevc_nvenc")  # nvidia vcodec
+            .output(output_path, vcodec="hevc_nvenc", r=fps)  # nvidia vcodec
             .run(overwrite_output=True)
         )
         print(f"\tProcessing completed -> {output_path}")
@@ -149,19 +158,33 @@ def main():
 
     print(f"The minimun resolution is {min_w}x{min_h} and the maximum resolution is {max_w}x{max_h}.")
 
+    min_fps = sys.maxsize
+    max_fps = -sys.maxsize - 1
+
+    for video_file in os.listdir(source_dir):
+        video_path = os.path.join(source_dir, video_file)
+        fps = get_frame_rate(video_path)
+
+        min_fps = min(min_fps, fps)
+        max_fps = max(max_fps, fps)
+
+    print(f"The maximum fps is {max_fps} and the minimum fps is {min_fps}")
 
     # process the selected videos
     output_dir = "/home/jalal/projects/data/neurocig/vids/processed/"
     os.makedirs(output_dir, exist_ok=True)
 
+    overwrite = True
+    for_infernece = False
     for video_file in os.listdir(source_dir):
         if video_file.endswith('.mp4'):
-            overwrite = True
             duration = 900
-            if "aria" in video_file.lower():
-                duration = get_video_duration(source_dir, video_file)
-            process_video(source_dir, output_dir, video_file, overwrite, duration, w=min_w, h=min_h)
-
+            fps = min_fps
+            if for_infernece:
+                if "aria" in video_file.lower():
+                    duration = get_video_duration(source_dir, video_file)
+                fps = get_frame_rate(source_dir, video_file)
+            process_video(source_dir, output_dir, video_file, overwrite, duration, fps, w=min_w, h=min_h)
             
 
 if __name__ == "__main__":
