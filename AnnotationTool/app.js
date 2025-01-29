@@ -566,20 +566,20 @@ document.addEventListener("keydown", (event) => {
     // Notify the user that annotations have been saved
     alert("Annotations saved!");
   }
-  // --- Undo Last Change (Ctrl + Z) ---
-  else if (event.ctrlKey && event.key === "z") {
-    // Check if there is a previous state in the undo stack
-    if (undoStack.length > 0) {
-      // Restore the last saved state from the undo stack
-      annotations = JSON.parse(undoStack.pop());
+  // // --- Undo Last Change (Ctrl + Z) ---
+  // else if (event.ctrlKey && event.key === "z") {
+  //   // Check if there is a previous state in the undo stack
+  //   if (undoStack.length > 0) {
+  //     // Restore the last saved state from the undo stack
+  //     annotations = JSON.parse(undoStack.pop());
 
-      // Refresh the annotation list to reflect the restored state
-      updateAnnotationList();
+  //     // Refresh the annotation list to reflect the restored state
+  //     updateAnnotationList();
 
-      // Reload the current image and its annotations on the canvas
-      loadImage();
-    }
-  }
+  //     // Reload the current image and its annotations on the canvas
+  //     loadImage();
+  //   }
+  // }
 });
 
 
