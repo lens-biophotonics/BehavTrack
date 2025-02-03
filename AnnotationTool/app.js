@@ -62,6 +62,9 @@ function updateFileListAndProgress() {
           imageAnnotations.length === 5 &&
           imageAnnotations.every(annotation => Object.keys(annotation.keypoints).length === 4);
 
+      noPredictions = imageAnnotations.every(annotation => annotation.mAnnotated);
+
+      // console.log(imageAnnotations.every(annotation => Object.keys(annotation.mAnnotated) == false))
       // Check if the frame is partially annotated
       // A partially annotated frame has at least one bounding box but does not meet the criteria for completeness
       const isPartial = imageAnnotations.length > 0 && !isComplete;
@@ -72,7 +75,7 @@ function updateFileListAndProgress() {
       fileItem.className = index === currentImageIndex ? "selected" : ""; // Highlight the current image being viewed
 
       // Assign a color to the file item based on its annotation completeness
-      if (isComplete) {
+      if (isComplete && noPredictions) {
         if (!framesComplete.includes(imageName)) {
           framesComplete.push(imageName)
         }
@@ -83,7 +86,10 @@ function updateFileListAndProgress() {
             framesComplete.splice(index, 1); // This removes the element and updates length
         }
 
-        if (isPartial) {
+        if (!noPredictions) {
+          fileItem.style.color = "blue";
+        }
+        else if (isPartial) {
           fileItem.style.color = "orange"; // Orange indicates the frame is partially annotated
         } else {
           fileItem.style.color = "black"; // Gray indicates the frame has no annotations
@@ -205,9 +211,9 @@ function drawAnnotations() {
   const imageAnnotations = annotations[imageName] || [];
 
   // Iterate over each annotation for the current image
-  imageAnnotations.forEach(({ bbox, keypoints }, index) => {
+  imageAnnotations.forEach(({ bbox, keypoints, mAnnotated }, index) => {
     // --- Draw Bounding Box ---
-    ctx.strokeStyle = "red"; // Set the stroke color for the bounding box to red
+    ctx.strokeStyle = mAnnotated ? "red" : "blue"; // Set the stroke color for the bounding box to red
     ctx.lineWidth = 2; // Set the line width for the bounding box
     ctx.strokeRect(
       bbox.x1, // X-coordinate of the top-left corner
@@ -222,7 +228,7 @@ function drawAnnotations() {
       // `coords` is an array containing the X and Y coordinates of the keypoint
 
       if (coords[2] == 1) { // if the keypoint invisible 
-        ctx.fillStyle = "orange"; // Set the fill color for the keypoint to yellow #8b930a
+        ctx.fillStyle = mAnnotated ? "orange" :"#F0FFFF"; // Set the fill color for the keypoint to yellow #8b930a
         ctx.beginPath(); // Begin a new path for the keypoint circle
         ctx.arc(
           coords[0], // X-coordinate of the keypoint
@@ -241,7 +247,7 @@ function drawAnnotations() {
         );
       }
       else { // if the keypoint visible 
-        ctx.fillStyle = "#4eff10"; // Set the fill color for the keypoint to yellow #4eff10
+        ctx.fillStyle = mAnnotated ? "#4eff10" : "#088F8F"; // Set the fill color for the keypoint to yellow #4eff10
         ctx.beginPath(); // Begin a new path for the keypoint circle
         ctx.arc(
           coords[0], // X-coordinate of the keypoint
@@ -385,7 +391,35 @@ function selectBoundingBox(index) {
   highlightBoundingBox();
 
   updateSelectedBBoxDisplay();
+}
 
+function update_mAnnotated() {
+    // Get the name of the currently displayed image
+  const imageName = images[currentImageIndex].name;
+
+  // Retrieve annotations for the current image, defaulting to an empty array if none exist
+  const imageAnnotations = annotations[imageName] || [];
+
+  // Get the specific annotation (bounding box) by its index
+  const annotation = imageAnnotations[selectedBBoxIndex];
+
+  annotation.mAnnotated = true
+
+      // --- Save Updated Annotations ---
+  // Save the modified annotations back to the annotation.json file
+  saveAnnotations();
+
+  // --- Update the Annotation List ---
+  // Refresh the annotation list in the sidebar to reflect the deletion
+  updateAnnotationList();
+
+  // --- Redraw the Canvas ---
+  // Reload the current image and redraw its annotations to reflect the changes
+  loadImage();
+
+  // --- Update File List and Progress ---
+  // Refresh the file list on the left to update the annotation status for this image
+  updateFileListAndProgress();
 }
 
 
@@ -400,11 +434,15 @@ function highlightBoundingBox() {
   // Get the specific annotation (bounding box) by its index
   const annotation = imageAnnotations[selectedBBoxIndex];
 
+  if (!annotation.mAnnotated) update_mAnnotated()
+
   // If the annotation doesn't exist (e.g., invalid index), exit the function
   if (!annotation) return;
 
   // Extract the bounding box coordinates from the annotation
   const { bbox, keypoints } = annotation;
+
+  
 
   // --- Draw Highlighted Bounding Box ---
   ctx.save(); // Save the current canvas state
@@ -692,6 +730,7 @@ canvas.addEventListener("mouseup", () => {
       annotations[imageName].push({
         bbox: finalBBox, // Add the bounding box coordinates
         keypoints: {}, // Initialize an empty keypoints object (to be populated later)
+        mAnnotated: true, // manually added
       });
 
 
