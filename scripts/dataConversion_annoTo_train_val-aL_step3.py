@@ -70,14 +70,13 @@ def save_yolo_label(t_v_images_dir, frame_name, yolo_bBox_labels):
 
 
 def prepare_train_val(t_v_dir, annotations_dir, frame_name, annotation_info):
-    t_v_images_dir = os.path.join(t_v_dir, "images")
     currentFrame_path = os.path.join(annotations_dir, frame_name)
-    copyframes_train_val(currentFrame_path, t_v_images_dir)
+    copyframes_train_val(currentFrame_path, t_v_dir)
 
     frame_w, frame_h = get_image_size(currentFrame_path)
     mouse_class_label = 0
     yolo_bBox_labels = create_yolo_bBox_labels(annotation_info,  frame_w, frame_h, mouse_class_label)
-    save_yolo_label(t_v_images_dir, frame_name, yolo_bBox_labels)
+    save_yolo_label(t_v_dir, frame_name, yolo_bBox_labels)
 
 
 # Main()
