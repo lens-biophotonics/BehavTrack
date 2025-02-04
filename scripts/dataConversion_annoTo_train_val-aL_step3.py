@@ -83,8 +83,6 @@ def prepare_train_val(t_v_dir, annotations_dir, frame_name, annotation_info):
 # Main()
 def main():
     # dirs' path
-    source_dir = "/mnt/c/Users/karti/chest/CNR/projects/data/neurocig/frames"
-    output_dir = "/mnt/c/Users/karti/chest/CNR/projects/data/neurocig/stratifySplit_frames"
     activeLearning_dir = "/mnt/c/Users/karti/chest/CNR/projects/data/neurocig/stratifySplit_frames/activeLearning"
 
 
