@@ -60,6 +60,8 @@ def yolo_txt_to_annotation_json(
     image_filename,   # "image_filename.jpg"
     image_width, 
     image_height,
+    mAnnotated_flag,
+    visiblePercentage,
     keypoint_names=None
 ):
     """
@@ -137,7 +139,7 @@ def yolo_txt_to_annotation_json(
             
             kpt_name = keypoint_names[i]
             
-            keypoints_dict[kpt_name] = [x_kpt, y_kpt, 2 if v_kpt > 0.8 else 1]
+            keypoints_dict[kpt_name] = [x_kpt, y_kpt, 2 if v_kpt > visiblePercentage else 1]
 
         annotations[image_filename].append({
             "bbox": {
@@ -147,7 +149,7 @@ def yolo_txt_to_annotation_json(
                 "y2": y2
             },
             "keypoints": keypoints_dict,
-            "mAnnotated": False
+            "mAnnotated": mAnnotated_flag
         })
 
     return annotations
@@ -181,6 +183,8 @@ def main():
 
 
     combinedAnnotated_json = load_metadata(annotations_dir, annotation_json)
+    mAnnotated_flag = False
+    visiblePercentage = 0.85
     for label in os.listdir(predict_dir):
         if label.endswith(".txt"):
             label_path = os.path.join(predict_dir, label)
@@ -189,7 +193,7 @@ def main():
             img_path = os.path.join(predict_dir, image_name)
             img_w, img_h = get_image_size(img_path)
 
-            predictions = yolo_txt_to_annotation_json(label_path, image_name,img_w, img_h, ["nose", "earL", "earR", "tailB"])
+            predictions = yolo_txt_to_annotation_json(label_path, image_name,img_w, img_h, mAnnotated_flag, visiblePercentage, ["nose", "earL", "earR", "tailB"])
             combinedAnnotated_json.update(predictions)
 
     save_metadata(annotations_dir, "annotation.json", combinedAnnotated_json)
