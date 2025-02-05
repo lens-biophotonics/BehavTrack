@@ -184,7 +184,7 @@ def main():
 
     combinedAnnotated_json = load_metadata(annotations_dir, annotation_json)
     mAnnotated_flag = False
-    visiblePercentage = 0.85
+    visiblePercentage = 0.90
     for label in os.listdir(predict_dir):
         if label.endswith(".txt"):
             label_path = os.path.join(predict_dir, label)
