@@ -1,7 +1,8 @@
 from ultralytics import YOLO
 
+model_path = "/home/jalal/projects/data/neurocig/yolo/cycle_1/weights/best.pt"
 # Load a model
-model = YOLO("/home/jalal/projects/data/neurocig/yolo/yolo11x-pose/weights/best.pt")  # load a pretrained model (recommended for training)
+model = YOLO(model_path)  # load a pretrained model (recommended for training)
 
 # Train the model with 2 GPUs
 # 100 - 500 frames -> epoch 50 batch 16

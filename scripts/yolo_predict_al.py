@@ -1,8 +1,9 @@
 from ultralytics import YOLO
 import os
 
+model_path = "/home/jalal/projects/data/neurocig/yolo/cycle_1/weights/best.pt"
 # Load a model
-model = YOLO("/home/jalal/projects/data/neurocig/yolo/yolo11x-pose/weights/best.pt")  # pretrained YOLO11n model
+model = YOLO(model_path)  # pretrained YOLO11n model
 
 predict_dir = "/home/jalal/projects/data/neurocig/yolo/predict"
 
