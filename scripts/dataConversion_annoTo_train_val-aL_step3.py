@@ -99,8 +99,8 @@ def main():
     mAnnotated_json = load_metadata(annotations_dir, annotation_json)
 
     # train and val frame metadata
-    train_metadata = load_metadata(train_dir, train_json)
-    val_metadata = load_metadata(val_dir, val_json)
+    train_metadata = load_metadata(activeLearning_dir, train_json)
+    val_metadata = load_metadata(activeLearning_dir, val_json)
 
 
     for frame_name, annotation_info in mAnnotated_json.items():
