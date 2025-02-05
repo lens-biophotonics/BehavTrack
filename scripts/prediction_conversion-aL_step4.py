@@ -197,3 +197,7 @@ def main():
             combinedAnnotated_json.update(predictions)
 
     save_metadata(annotations_dir, "annotation.json", combinedAnnotated_json)
+
+
+if __name__ == "__main__":
+    main()
