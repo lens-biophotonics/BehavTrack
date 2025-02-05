@@ -89,7 +89,7 @@ def main():
 
     annotations_metadata = load_metadata(activeLearning_dir, annotations_metadata_filename)
     # load the active learning frames metadata
-    activeLearning_metadata = load_metadata(activeLearning_dir, aL_metadata_filename)
+    activeLearning_metadata = load_metadata(output_dir, aL_metadata_filename)
 
 
     split_ratio_annotation = 0.15

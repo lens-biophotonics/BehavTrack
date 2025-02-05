@@ -91,7 +91,7 @@ def main():
     intialN_annotatonData = 100
 
     # load the active learning frames metadata
-    activeLearning_metadata = load_metadata(activeLearning_dir, metadata_filename_al)
+    activeLearning_metadata = load_metadata(output_dir, metadata_filename_al)
 
     # calculate the split ratio respective to intialN_annotatonData
     split_ratio_aL = round(((intialN_annotatonData/len(activeLearning_metadata))*100)/100, 3)
