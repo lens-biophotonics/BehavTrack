@@ -1,6 +1,7 @@
 from ultralytics import YOLO
 
-model_path = "/home/jalal/projects/data/neurocig/yolo/cycle_1/weights/best.pt"
+prev_cycle = 2
+model_path = f"/home/jalal/projects/data/neurocig/yolo/cycle_{prev_cycle}/weights/best.pt"
 # Load a model
 model = YOLO(model_path)  # load a pretrained model (recommended for training)
 
@@ -9,7 +10,7 @@ model = YOLO(model_path)  # load a pretrained model (recommended for training)
 # 500 - 1000 frames - > epoch 70 batch 32
 # 1000 - 5000 frames -> epoch 100 batch 64
 # 5000 < frames -> epoch 200 / 300 batch 128
-cycle = 2
-name = f"cycle_{cycle}"
+new_cycle = prev_cycle + 1
+name = f"cycle_{new_cycle}"
 
 results = model.train(data="yolo_dataset.yaml", epochs=50, imgsz=640, batch=16, save=True, resume=False, name=name, project='/home/jalal/projects/data/neurocig/yolo')
