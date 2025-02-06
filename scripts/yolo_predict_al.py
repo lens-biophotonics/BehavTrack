@@ -16,4 +16,4 @@ for p_image in os.listdir(predict_dir):
         predict_images.append(p_image_path)
 
 # Run batched inference on a list of images
-model.predict(predict_images, save=True, save_txt=True, project=predict_dir, name='results')  # return a generator of Results objects
+model.predict(predict_images, save=True, save_txt=True, max_det=5, project=predict_dir, name='results')  # return a generator of Results objects
