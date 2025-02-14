@@ -17,4 +17,4 @@ output_dir = "/home/jalal/projects/data/neurocig/vids/results"
 #         predict_images.append(p_image_path)
 
 # Run batched inference on a list of images
-model.track(os.path.join(predict_dir, "Gabbia2-D6-eCig(1)-pre.mp4"), stream=True, stream_buffer=True ,save=True, save_txt=True, max_det=5, project=predict_dir, name='test2_track')  # return a generator of Results objects
+model.track(os.path.join(predict_dir, "Gabbia2-D6-eCig(1)-pre.mp4"), stream=True, stream_buffer=True ,save=True, save_txt=True, max_det=5, project=output_dir, name='test2_track')  # return a generator of Results objects
