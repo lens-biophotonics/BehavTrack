@@ -22,6 +22,7 @@ let undoStack = []; // Stack to keep track of changes for undo functionality
 let visibleKeypoint = false;
 let selectedBBoxIndex = 0;
 let framesComplete = [];
+let sort_notComplete = false;
 
 // Function to update the mode display in the toolbar
 function updateModeDisplay() {
@@ -45,6 +46,47 @@ function updateSelectedBBoxDisplay() {
     `Annotations: ${imageAnnotations.length} <br /> Selected Bounding Box: ${selectedBBoxIndex+1}`;
 }
 
+
+function imageAnnotations_isComplete(imageName) {
+  const imageAnnotations = annotations[imageName] || []; // Retrieve annotations for the image, defaulting to an empty array if none exist
+
+  // Check if the frame is fully annotated
+  // A fully annotated frame requires exactly 5 bounding boxes, each with 4 keypoints
+  return imageAnnotations.length === 5 &&
+    imageAnnotations.every(annotation => Object.keys(annotation.keypoints).length === 4) &&
+    imageAnnotations.every(annotation => annotation.mAnnotated);;
+}
+
+
+function performSort_fileListAndProgress() {
+
+  sort_notComplete = ! sort_notComplete;
+
+  const imgSortFn = (a, b) => {
+    if (imageAnnotations_isComplete(a.name)) {
+      return 1;
+    } else if (imageAnnotations_isComplete(a.name) === imageAnnotations_isComplete(b.name)) {
+      return 0;
+    } else {
+      return -1;
+    }
+  };
+
+  const currentImage_name = images[currentImageIndex]
+
+  if (sort_notComplete)
+    images.sort(imgSortFn);
+  else
+    images.sort((a, b) => a.name.localeCompare(b.name));
+
+  currentImageIndex = images.indexOf(currentImage_name)
+
+  console.log(currentImageIndex)
+
+  loadImage();
+
+  updateFileListAndProgress();
+}
 
 
 function updateFileListAndProgress() {
@@ -97,7 +139,15 @@ function updateFileListAndProgress() {
       }
 
       document.getElementById("frameProgress").innerHTML =
-      `Frames: ${framesComplete.length}/${images.length}`;
+      `
+          <span>
+          Frames: ${framesComplete.length}/${images.length}
+          </span>
+
+          <button onclick='performSort_fileListAndProgress()'>
+            sort
+          </button>
+      `;
 
       // Add a click event to allow the user to select this image
       fileItem.addEventListener("click", () => {
@@ -149,6 +199,7 @@ folderInput.addEventListener("click", async () => {
     saveAnnotations(); // Save the empty object to the new file
   } else {
     // If annotation.json exists, read its contents
+    console.log(annotationFileHandle)
     const file = await annotationFileHandle.getFile();
     annotations = JSON.parse(await file.text()); // Parse the JSON content into the `annotations` object
   }

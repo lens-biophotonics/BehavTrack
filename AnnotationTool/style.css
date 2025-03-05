@@ -83,6 +83,12 @@ body {
   font-weight: 600;
 }
 
+#frameProgress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 /* Canvas container */
 #canvasContainer {
   flex: 3;
