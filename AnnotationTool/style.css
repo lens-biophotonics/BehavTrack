@@ -28,6 +28,33 @@ body {
   color: #555;
 }
 
+#mode_bbox {
+  color: red;
+}
+
+#mode_nose {
+  color: rgb(153, 204, 255);
+}
+
+#mode_earL {
+  color: rgb(255, 182, 78);
+}
+
+#mode_earR {
+  color: rgb(255, 102, 102);
+}
+
+#mode_tailB {
+  color: rgb(255, 153, 204);
+}
+
+#visibility_true {
+  color: #4eff10;
+}
+
+#visibility_false {
+  color: orange;
+}
 
 
 /* Main annotation container */

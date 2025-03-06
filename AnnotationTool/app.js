@@ -27,11 +27,11 @@ let sort_notComplete = false;
 // Function to update the mode display in the toolbar
 function updateModeDisplay() {
   // Dynamically update the text displayed in the mode indicator based on the current mode
-  document.getElementById("modeDisplay").textContent =
+  document.getElementById("modeDisplay").innerHTML =
     mode === "bbox" // If mode is "bbox", show "Bounding Box"
-      ? "Mode: Bounding Box"
+      ? "Mode: <span id='mode_bbox'> Bounding Box </span>"
       // If mode is "keypoint", show the current keypoint being placed (e.g., "Keypoint (nose)")
-      : `Mode: Keypoint (${keypoints[currentKeypointIndex]}) - Visibility (${visibleKeypoint})`;
+      : `Mode: Keypoint (<span id='mode_${keypoints[currentKeypointIndex]}'>${keypoints[currentKeypointIndex]}</span>) - Visibility (<span id='visibility_${visibleKeypoint}'>${visibleKeypoint}</span>)`;
 }
 
 function updateSelectedBBoxDisplay() {
