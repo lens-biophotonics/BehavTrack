@@ -273,13 +273,24 @@ function drawAnnotations() {
       bbox.y2 - bbox.y1 // Height of the bounding box
     );
 
+    ctx.font = "15px Arial";
+    ctx.fillStyle = "#45f7dc";
+    // Draw the mouse index
+    ctx.fillText(
+      `${index+1}`, // The index
+      bbox.x1 + 5, // Position the text slightly to the right of the keypoint
+      bbox.y1 - 5 // Position the text slightly above the keypoint
+    );
+
+
+    ctx.font = "normal 10px Arial";
     // --- Draw Keypoints ---
     for (const [key, coords] of Object.entries(keypoints)) {
       // `key` is the name of the keypoint (e.g., "nose", "earL")
       // `coords` is an array containing the X and Y coordinates of the keypoint
 
       if (coords[2] == 1) { // if the keypoint invisible 
-        ctx.fillStyle = mAnnotated ? "orange" :"#F0FFFF"; // Set the fill color for the keypoint to yellow #8b930a
+        ctx.fillStyle = mAnnotated ? "orange" :"#F0FFFF"; // Set the fill color for the keypoint to yellow#45f7dc
         ctx.beginPath(); // Begin a new path for the keypoint circle
         ctx.arc(
           coords[0], // X-coordinate of the keypoint
@@ -505,6 +516,16 @@ function highlightBoundingBox() {
     bbox.x2 - bbox.x1, // Width of the bounding box
     bbox.y2 - bbox.y1 // Height of the bounding box
   );
+
+  ctx.font = "15px Arial";
+  // Draw the mouse index
+  ctx.strokeText(
+    selectedBBoxIndex+1, // The index
+    bbox.x1 + 5, // Position the text slightly to the right of the keypoint
+    bbox.y1 - 5 // Position the text slightly above the keypoint
+  );
+  
+  ctx.font = "normal 10px Arial";
 
   for (const [key, coords] of Object.entries(keypoints)) {
 
