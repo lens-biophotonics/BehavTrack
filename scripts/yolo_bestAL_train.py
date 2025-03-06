@@ -7,9 +7,11 @@ model = YOLO(model_path)  # load a pretrained model (recommended for training)
 
 # Train the model with GPUs
 # 100 - 500 frames -> epoch 50 batch 16
-# frames > 500  - > epoch 70 batch 22 (memory constraints 24GB with 3090)
-epochs = 70
-batch = 22
+# 500 - 1000 -> epoch 60 batch 18 
+# 1000 - 1500 -> epoch 70 batch 20
+# frames > 1500 -> epoch 80 batch 22
+epochs = 60
+batch = 18
 
 
 new_cycle = prev_cycle + 1
