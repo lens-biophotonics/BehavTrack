@@ -1,15 +1,15 @@
 from ultralytics import YOLO
 
-prev_cycle = 7
+prev_cycle = 6
 model_path = f"/home/jalal/projects/data/neurocig/yolo/cycle_{prev_cycle}/weights/best.pt"
 # Load a model
 model = YOLO(model_path)  # load a pretrained model (recommended for training)
 
 # Train the model with GPUs
 # 100 - 500 frames -> epoch 50 batch 16
-# frames > 500  - > epoch 70 batch 24 (memory constraints 24GB with 3090)
+# frames > 500  - > epoch 70 batch 22 (memory constraints 24GB with 3090)
 epochs = 70
-batch = 24
+batch = 22
 
 
 new_cycle = prev_cycle + 1
