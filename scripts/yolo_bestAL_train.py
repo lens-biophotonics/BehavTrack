@@ -13,4 +13,7 @@ model = YOLO(model_path)  # load a pretrained model (recommended for training)
 new_cycle = prev_cycle + 1
 name = f"cycle_{new_cycle}"
 
-results = model.train(data="yolo_dataset.yaml", epochs=50, imgsz=640, batch=16, save=True, resume=False, name=name, project='/home/jalal/projects/data/neurocig/yolo')
+epochs = 70
+batch = 32
+
+results = model.train(data="yolo_dataset.yaml", epochs=epochs, imgsz=640, batch=batch, save=True, resume=False, name=name, project='/home/jalal/projects/data/neurocig/yolo')
