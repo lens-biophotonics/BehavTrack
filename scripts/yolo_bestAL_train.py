@@ -1,6 +1,6 @@
 from ultralytics import YOLO
 
-prev_cycle = 6
+prev_cycle = 7
 model_path = f"/home/jalal/projects/data/neurocig/yolo/cycle_{prev_cycle}/weights/best.pt"
 # Load a model
 model = YOLO(model_path)  # load a pretrained model (recommended for training)

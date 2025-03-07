@@ -1,15 +1,15 @@
 from ultralytics import YOLO
 import os
 
-cycle = 7
+cycle = 8
 model_path = f"/home/jalal/projects/data/neurocig/yolo/cycle_{cycle}/weights/best.pt"
 # Load a model
 model = YOLO(model_path)  # pretrained YOLO11n model
 
 predict_dir = "/home/jalal/projects/data/neurocig/vids/processed"
-output_dir = "/home/jalal/projects/data/neurocig/vids/results"
+output_dir = f"/home/jalal/projects/data/neurocig/vids/results/cycle_{cycle}"
 
-output_folder = 'cycle_7-no_track'
+output_folder = 'noTrack'
 
 # predict_images = []
 
