@@ -16,6 +16,9 @@ def load_metadata(source_dir, metadata_filename):
     
 
 def performSplit(metadata, split_ratio):
+    if split_ratio > 1.0:
+        split_ratio = 1.0
+        
     clusters = [entry['cluster'] for entry in metadata]
     
     activeLearning_data, prediction_data = train_test_split(
