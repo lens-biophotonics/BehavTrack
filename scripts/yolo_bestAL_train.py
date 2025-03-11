@@ -10,8 +10,8 @@ model = YOLO(model_path)  # load a pretrained model (recommended for training)
 # 500 - 1000 -> epoch 70 batch 18 
 # 1000 - 1500 -> epoch 90 batch 20
 # frames > 1500 -> epoch 110 batch 22
-epochs = 70
-batch = 18
+epochs = 90
+batch = 20
 
 new_cycle = prev_cycle + 1
 name = f"cycle_{new_cycle}"
