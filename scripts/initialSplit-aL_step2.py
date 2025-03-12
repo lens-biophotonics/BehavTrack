@@ -17,7 +17,7 @@ def load_metadata(source_dir, metadata_filename):
 
 def performSplit(metadata, split_ratio):
     if split_ratio > 1.0:
-        split_ratio = 1.0
+        return [], metadata
         
     clusters = [entry['cluster'] for entry in metadata]
     
