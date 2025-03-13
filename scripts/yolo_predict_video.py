@@ -1,5 +1,6 @@
 from ultralytics import YOLO
 import os
+from tqdm import tqdm
 
 best_cycle = 9
 model_path = f"/home/jalal/projects/data/neurocig/yolo/cycle_{best_cycle}/weights/best.pt"
@@ -9,7 +10,7 @@ model = YOLO(model_path)  # pretrained YOLO11n model
 vids_dir = "/home/jalal/projects/data/neurocig/vids/processed"
 output_dir = f"/home/jalal/projects/data/neurocig/vids/results/cycle_{best_cycle}/annotated"
 
-for vid_name in os.listdir(vids_dir):
+for vid_name in tqdm(os.listdir(vids_dir)):
     if vid_name.endswith('.mp4'):
         model.predict(os.path.join(vids_dir, vid_name),
             stream_buffer=True,
