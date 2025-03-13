@@ -448,7 +448,7 @@ def overlay_annotations_on_video(input_video, annotations, color_box, color_kpt,
 def main():
     cycle = 9
     predictedAnnotated_vids_dir = f"/home/jalal/projects/data/neurocig/vids/results/cycle_{cycle}/annotated"
-    vids_predictionOn_path = "/mnt/c/Users/karti/chest/CNR/projects/data/neurocig/vids/processed/"
+    vids_predictionOn_path = "/home/jalal/projects/data/neurocig/vids/processed/"
     output_dir = "/home/jalal/projects/data/neurocig/vids/results/cycle_{cycle}/tracked"
 
     os.makedirs(output_dir, exist_ok=True)
