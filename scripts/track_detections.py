@@ -459,7 +459,7 @@ def main():
         
         orig_vidPath = os.path.join(vids_predictionOn_path, vid_name)
 
-        predicted_labelsPath = os.path.join(predictedAnnotated_vids_dir, f'{vid_name.removesuffix('.mp4')}/labels')
+        predicted_labelsPath = os.path.join(predictedAnnotated_vids_dir, f'{vid_name.removesuffix(".mp4")}/labels')
 
         output_tracked_vidPath = os.path.join(output_dir, vid_name.removesuffix('.mp4'))
 
