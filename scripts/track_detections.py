@@ -457,10 +457,9 @@ def main():
         if not vid_name.endswith('.mp4'):
             continue
         
-        orig_vidPath = os.path.join(predictedAnnotated_vids_dir, vid_name)
+        orig_vidPath = os.path.join(vids_predictionOn_path, vid_name)
 
-        predicted_labelsPath = os.path.join(predictedAnnotated_vids_dir, vid_name)
-        predicted_labelsPath = os.path.join(predicted_labelsPath, 'labels')
+        predicted_labelsPath = os.path.join(predictedAnnotated_vids_dir, f'{vid_name}/labels')
 
         output_tracked_vidPath = os.path.join(output_dir, vid_name.removesuffix('.mp4'))
 
@@ -494,6 +493,7 @@ def main():
         # sort based on frame index
         detections = dict(sorted(detections.items()))
 
+        # perform tracking
         scale_factor = 0.15
         penalty_per_missing = 100
         alpha = 0.75
@@ -530,6 +530,7 @@ def main():
 
         discard = (False, [])
 
+
         overlay_annotations_on_video(orig_vidPath,
             tracked_detections,
             color_box,
@@ -537,7 +538,6 @@ def main():
             FinalVideo_path,
             discard
         )
-
 
 
 if __name__ == '__main__':
