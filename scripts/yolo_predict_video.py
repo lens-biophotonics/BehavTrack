@@ -12,7 +12,6 @@ output_dir = f"/home/jalal/projects/data/neurocig/vids/results/cycle_{best_cycle
 for vid_name in os.listdir(vids_dir):
     if vid_name.endswith('.mp4'):
         model.predict(os.path.join(vids_dir, vid_name),
-            stream=True,
             stream_buffer=True,
             save=True,
             save_txt=True,
