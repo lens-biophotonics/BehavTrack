@@ -315,6 +315,7 @@ def intial_tracking(firstFrame_detections):
 
 
 def track(detections, scale_factor, penalty_per_missing,  abs_w, abs_h, alpha, epsilon, cost_threshold=0.5, testing=False):
+    print(detections)
     tracked_detections = intial_tracking(detections['1'])
     currentFrame_index = 1
     
@@ -500,7 +501,8 @@ def main():
         epsilon = 1e-6
         cost_threshold = -0.9
         testing = False
-        tracked_detections = track(detections,
+        tracked_detections = track(
+            detections,
             scale_factor,
             penalty_per_missing,
             img_w, img_h, alpha,
