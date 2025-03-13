@@ -451,6 +451,8 @@ def main():
     vids_predictionOn_path = "/mnt/c/Users/karti/chest/CNR/projects/data/neurocig/vids/processed/"
     output_dir = "/home/jalal/projects/data/neurocig/vids/results/cycle_{cycle}/tracked"
 
+    os.makedirs(output_dir, exist_ok=True)
+
     for vid_name in tqdm(os.listdir(vids_predictionOn_path)):
         if not vid_name.endswith('.mp4'):
             continue
