@@ -17,5 +17,5 @@ for vid_name in os.listdir(vids_dir):
             save_txt=True,
             max_det=5,
             project=output_dir,
-            name=vid_name
+            name=vid_name.removesuffix('.mp4')
         )
