@@ -7,6 +7,7 @@ import json
 from scipy.optimize import linear_sum_assignment
 import cv2
 from tqdm import tqdm
+import inspect
 
 # Helper Functions
 
@@ -124,7 +125,6 @@ def get_video_resolution(filename):
     metadata = FFProbe(filename)
     for stream in metadata.streams:
         if stream.is_video():
-            print(dir(stream))
             return (int(stream.width), int(stream.height))
         
     return (None, None)
@@ -314,8 +314,7 @@ def intial_tracking(firstFrame_detections):
     return {"1" : tracking}
 
 
-def track(detections, scale_factor, penalty_per_missing,  abs_w, abs_h, alpha, epsilon, cost_threshold=0.5, testing=False):
-    print(detections)
+def track(vid_name, detections, scale_factor, penalty_per_missing,  abs_w, abs_h, alpha, epsilon, cost_threshold=0.5, testing=False):
     tracked_detections = intial_tracking(detections['1'])
     currentFrame_index = 1
     
@@ -323,6 +322,15 @@ def track(detections, scale_factor, penalty_per_missing,  abs_w, abs_h, alpha, e
         # next frame
         nextFrame_index = currentFrame_index + 1
 
+        index_flag = f"{nextFrame_index}" in detections
+        while not index_flag:
+            print(f"Missing index {nextFrame_index} - {vid_name}")
+            nextFrame_index += 1
+            index_flag = f"{nextFrame_index}" in detections
+
+        if not index_flag:
+            break
+        
         # i x j cost matrix where, 
         #  i is the number of detections in current frame
         # j is the number od detections in previous frame
@@ -356,28 +364,32 @@ def track(detections, scale_factor, penalty_per_missing,  abs_w, abs_h, alpha, e
             break
 
         all_mouseId_list = [0, 1, 2, 3, 4]
-        included_mouseId_list = []
+        included_prev_mouseId_list = []
+        included_next_mouseId_list = []
 
         tracked_detection = {}
         for i in range(len(row_idx)):
             if cost_matrix[row_idx[i]][col_idx[i]] <= cost_threshold:
                 tracked_detection[f'{row_idx[i]}'] = detections[f'{nextFrame_index}'][col_idx[i]]
+                included_next_mouseId_list.append(col_idx[i])
             else:
                 tracked_detection[f'{row_idx[i]}'] = tracked_detections[f'{currentFrame_index}'][f'{row_idx[i]}']
 
-            included_mouseId_list.append(row_idx[i])
+            included_prev_mouseId_list.append(row_idx[i])
+            
 
         
         for mouse_id in all_mouseId_list:
-            if mouse_id in included_mouseId_list:
-                continue
-            
-            tracked_detection[f'{mouse_id}'] = tracked_detections[f'{currentFrame_index}'][f'{mouse_id}']
+            if not(mouse_id in included_prev_mouseId_list):
+                if mouse_id < len(tracked_detections[f'{currentFrame_index}']):
+                    tracked_detection[f'{mouse_id}'] = tracked_detections[f'{currentFrame_index}'][f'{mouse_id}']
+                elif not(mouse_id in included_next_mouseId_list) and mouse_id < len(detections[f'{nextFrame_index}']):
+                    tracked_detection[f'{mouse_id}'] = detections[f'{nextFrame_index}'][mouse_id]
 
         tracked_detections[f'{nextFrame_index}'] = tracked_detection
 
         # skip to next frame
-        currentFrame_index += 1
+        currentFrame_index = nextFrame_index
 
 
     return tracked_detections
@@ -450,7 +462,7 @@ def main():
     cycle = 9
     predictedAnnotated_vids_dir = f"/home/jalal/projects/data/neurocig/vids/results/cycle_{cycle}/annotated"
     vids_predictionOn_path = "/home/jalal/projects/data/neurocig/vids/processed/"
-    output_dir = "/home/jalal/projects/data/neurocig/vids/results/cycle_{cycle}/tracked"
+    output_dir = f"/home/jalal/projects/data/neurocig/vids/results/cycle_{cycle}/tracked"
 
     os.makedirs(output_dir, exist_ok=True)
 
@@ -462,7 +474,8 @@ def main():
 
         predicted_labelsPath = os.path.join(predictedAnnotated_vids_dir, f'{vid_name.removesuffix(".mp4")}/labels')
 
-        output_tracked_vidPath = os.path.join(output_dir, vid_name.removesuffix('.mp4'))
+        output_tracked_vidPath = os.path.join(output_dir, vid_name.removesuffix(".mp4"))
+        os.makedirs(output_tracked_vidPath, exist_ok=True)
 
         img_w, img_h = get_video_resolution(orig_vidPath)
 
@@ -477,7 +490,7 @@ def main():
                 txt_path = os.path.join(predicted_labelsPath, predicted_label)
 
                 temp_holder = predicted_label.split('_')
-                frame_index = int(temp_holder[1].split('.')[0])
+                frame_index = f"{int(temp_holder[len(temp_holder)-1].split('.')[0])}"
 
                 detection = yolo_txt_to_annotation_json(
                     txt_path,
@@ -489,10 +502,12 @@ def main():
                     ["nose", "earL", "earR", "tailB"]
                 )
 
-        detections.update(detection)
+                detections.update(detection)
 
         # sort based on frame index
         detections = dict(sorted(detections.items()))
+
+        save_metadata(output_tracked_vidPath, 'annotations.json', detections)
 
         # perform tracking
         scale_factor = 0.15
@@ -502,6 +517,7 @@ def main():
         cost_threshold = -0.9
         testing = False
         tracked_detections = track(
+            vid_name,
             detections,
             scale_factor,
             penalty_per_missing,
