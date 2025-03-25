@@ -7,7 +7,6 @@ import json
 from scipy.optimize import linear_sum_assignment
 import cv2
 from tqdm import tqdm
-import inspect
 
 # Helper Functions
 
@@ -25,7 +24,8 @@ def yolo_txt_to_annotation_json(
     image_height,
     mAnnotated_flag,
     visiblePercentage,
-    keypoint_names=None
+    keypoint_names=None,
+    tracked=False
 ):
     """
     Reads a YOLO-like .txt (with bbox + 4 keypoints in normalized coords),
@@ -33,7 +33,7 @@ def yolo_txt_to_annotation_json(
 
     {
       "image_filename": [
-        {
+        "Tracking number": {
           "bbox": {"x1":..., "y1":..., "x2":..., "y2":...},
           "keypoints": {
             "nose":  [...],
@@ -51,6 +51,8 @@ def yolo_txt_to_annotation_json(
         keypoint_names = ["nose", "earL", "earR", "tailB"]
 
     annotations = {image_filename: []}
+    if tracked:
+        annotations = {image_filename: {}}
 
     with open(txt_path, "r") as f:
         lines = f.readlines()
@@ -102,9 +104,9 @@ def yolo_txt_to_annotation_json(
             
             kpt_name = keypoint_names[i]
             
-            keypoints_dict[kpt_name] = [x_kpt, y_kpt, 2 if v_kpt > visiblePercentage else 1]
+            keypoints_dict[kpt_name] = [x_kpt, y_kpt, 2 if v_kpt > visiblePercentage else 1]           
 
-        annotations[image_filename].append({
+        annotation = {
             "bbox": {
                 "x1": x1,
                 "y1": y1,
@@ -113,7 +115,15 @@ def yolo_txt_to_annotation_json(
             },
             "keypoints": keypoints_dict,
             "mAnnotated": mAnnotated_flag
-        })
+        }
+
+        if tracked:
+            tracking_id = int(tokens[17])
+            annotations[image_filename].update({
+                f'{tracking_id}' : annotation
+            })
+        else:
+            annotations[image_filename].append(annotation)
 
     return annotations
 
@@ -303,48 +313,153 @@ def compute_cost(track, detection, scale_factor, penalty_per_missing, abs_w, abs
     return (cdist_cost - iou_cost)/(cdist_cost + iou_cost + epsilon)
 
 
-def intial_tracking(firstFrame_detections):
-    tracking = {}
-    detection_id = 0
-    for detection in firstFrame_detections:
-        tracking[f"{detection_id}"] = detection
-
-        detection_id += 1
-
-    return {"1" : tracking}
-
-
-def track(vid_name, detections, scale_factor, penalty_per_missing,  abs_w, abs_h, alpha, epsilon, cost_threshold=0.5, testing=False):
-    tracked_detections = intial_tracking(detections['1'])
+def track(vid_name, detections, scale_factor, penalty_per_missing,  abs_w, abs_h, alpha, epsilon, cost_threshold=0.5, printing=False):
     currentFrame_index = 1
-    
-    while currentFrame_index < (len(detections) - 1):
+
+    while currentFrame_index <= (len(detections) - 1):
         # next frame
         nextFrame_index = currentFrame_index + 1
 
+        # check if the next frame index is valid or not
         index_flag = f"{nextFrame_index}" in detections
+        index_jump = False
+        # until we find a valid next frame
         while not index_flag:
+            if nextFrame_index == len(detections):
+                break       
+            
             print(f"Missing index {nextFrame_index} - {vid_name}")
             nextFrame_index += 1
             index_flag = f"{nextFrame_index}" in detections
-
+            index_jump = True
+        # if no valid next frame found
         if not index_flag:
             break
+        # if there was a next frame index skip, jump to 
+        # that index as the current index
+        if index_jump:
+            currentFrame_index = nextFrame_index
+            continue
         
-        # i x j cost matrix where, 
-        #  i is the number of detections in current frame
-        # j is the number od detections in previous frame
-        cost_matrix = np.zeros((len(tracked_detections[f'{currentFrame_index}']), len(detections[f'{nextFrame_index}'])), dtype=np.float32)
+        # To store if the current Frame have valid mouse Ids 
+        # and if they exist in the next frame.
+        # mouse_ID : (currentFrame_exist, nextFrame_exist) 
+        valid_mouseId_presence = {
+            '1' : (False, False),
+            '2' : (False, False),
+            '3' : (False, False),
+            '4' : (False, False),
+            '5' : (False, False),
+        }
+        for currentFrame_mouseId, _ in detections[f'{currentFrame_index}'].items():
+            valid_mouseId_presence[currentFrame_mouseId] = (
+                True, (currentFrame_mouseId in detections[f'{nextFrame_index}'])
+            )
+
+        # To store new mouse Ids appeared in the next frame
+        new_nextFrame_mouseIds = []
+        for nextFrame_mouseId, _ in detections[f'{nextFrame_index}'].items():
+            if nextFrame_mouseId in detections[f'{currentFrame_index}']:
+                continue
+
+            new_nextFrame_mouseIds.append(nextFrame_mouseId)
+
+        # flag to know if all the current frame mouse ids
+        # are matched to the next frame
+        valid_toSkip_flag = True
+        # get the number of unmatached mouse ids in the current frame
+        unmatched_currentFrame_Ids = []
+        for valid_currentFrame_ids, existFlags in valid_mouseId_presence.items():
+            if existFlags[1]:
+                continue
+            
+            # when not matched 
+            if existFlags[0]:
+                unmatched_currentFrame_Ids.append(valid_currentFrame_ids)
+                valid_toSkip_flag = False
+
+
+        # when all the current frame mouse ids and the next frame mouse ids
+        # are matched and nothing new exist. Skip to the next frame as the current 
+        # frame
+        if valid_toSkip_flag and (len(new_nextFrame_mouseIds) == 0):
+            if printing:
+                print(f"case 1 {currentFrame_index} - {nextFrame_index}")
+            currentFrame_index = nextFrame_index
+            continue
+        # when all the mouse ids from the current frames are matched but there
+        # is a new mouse id present in the next frame
+        # Note: this way of doing is viable here because we know 'at max' there can be only 
+        # 5 mouse ids in any frame
+        elif valid_toSkip_flag and (len(new_nextFrame_mouseIds) > 0):
+            if printing:
+                print(f"Case 2 {currentFrame_index} - {nextFrame_index}:")
+            # for the new mouse id
+            for new_nextFrame_mouseId in new_nextFrame_mouseIds:
+                # check for the mouse id that doesn't present in the current frame
+                for valid_mouseId, existFlags in valid_mouseId_presence.items():
+                    if existFlags[0]:
+                        continue
+                    
+                    # when found set its valid existence to true
+                    valid_mouseId_presence[valid_mouseId] = (True, True)
+                    # update the next frame new mouse id to the valid non exist one
+                    detections[f'{nextFrame_index}'].update({
+                        valid_mouseId : detections[f'{nextFrame_index}'].pop(new_nextFrame_mouseId)
+                    })
+
+                    if printing:
+                        print(f"\t{valid_mouseId} - {new_nextFrame_mouseId}")
+                    # To skip to the next new mouse id in the next frame
+                    break
+            
+            # Skip to the next frame as the current frame
+            currentFrame_index = nextFrame_index
+            continue
+        # when few of the mouse ids from the current frame are not matched but there
+        # are also no new mouse ids present in the next frame
+        if not(valid_toSkip_flag) and (len(new_nextFrame_mouseIds) == 0):
+            if printing:
+                print(f"Case 3 {currentFrame_index} - {nextFrame_index}")
+            #  check for the mouse id that doesn't have a match in the current frame
+            for valid_mouseId, existFlags in valid_mouseId_presence.items():
+                if not(existFlags[0]) or existFlags[1]:
+                    continue
+
+                # when found set its valid matched existence to true
+                valid_mouseId_presence[valid_mouseId] = (True, True)
+                # add it to the next frame 
+                detections[f'{nextFrame_index}'].update({
+                        valid_mouseId : detections[f'{currentFrame_index}'][valid_mouseId]
+                    })
+                
+                if printing:
+                    print(f"\t{valid_mouseId}")
+                
+            # Skip to the next frame as the current frame
+            currentFrame_index = nextFrame_index
+            continue
+
         
-        # print(len(tracked_detections[f'{currentFrame_index}']), len(detections[f'{nextFrame_index}']))
-        
-        for tracked_id, tracked_annotation in tracked_detections[f'{currentFrame_index}'].items():
-            for detected_annotation_index in range(len(detections[f'{nextFrame_index}'])):
-                detected_annotation = detections[f'{nextFrame_index}']
-                # print(f"\t {int(tracked_id)} {int(detected_annotation_index)}")
-                cost_matrix[int(tracked_id)][int(detected_annotation_index)] = compute_cost(
-                    tracked_annotation,
-                    detected_annotation[detected_annotation_index],
+        # set a i x j cost matrix where, 
+        #   i is the number of detections in current frame
+        #   j is the number od detections in previous frame
+        cost_matrix = np.zeros(
+            (len(unmatched_currentFrame_Ids), len(new_nextFrame_mouseIds)),
+            dtype=np.float32
+        )
+        # populate the cost matrix
+        for row_index in  range(len(unmatched_currentFrame_Ids)):
+            # for every current frame unmatched mouse id 
+            unmatched_currentFrame_Id = unmatched_currentFrame_Ids[row_index]
+
+            # we compute its cost with every new mouse id in the next frame
+            for col_index in range(len(new_nextFrame_mouseIds)):
+                new_nextFrame_mouseId = new_nextFrame_mouseIds[col_index]
+                
+                cost_matrix[row_index][col_index] = compute_cost(
+                    detections[f'{currentFrame_index}'][unmatched_currentFrame_Id],
+                    detections[f'{nextFrame_index}'][new_nextFrame_mouseId],
                     scale_factor,
                     penalty_per_missing,
                     abs_w,
@@ -353,46 +468,87 @@ def track(vid_name, detections, scale_factor, penalty_per_missing,  abs_w, abs_h
                     epsilon
                 )
 
+        # Best match set of unmatched current frame and next frame mouse ids
+        row_indexs, col_indexs = linear_sum_assignment(cost_matrix)
 
-        row_idx, col_idx = linear_sum_assignment(cost_matrix)
+        # for every match
+        for match_index in range(len(row_indexs)):
+            # get the matched row and col index
+            matched_rowIndex = row_indexs[match_index]
+            matched_colIndex = col_indexs[match_index]
+            # get the matched id from the corresponding frames
+            unmatched_currentFrame_Id = unmatched_currentFrame_Ids[matched_rowIndex]
+            new_nextFrame_mouseId = new_nextFrame_mouseIds[matched_colIndex]
 
-        if testing:
-            print(cost_matrix)
+            if printing:
+                print(f"Case 4 {currentFrame_index} - {nextFrame_index}\n\t{unmatched_currentFrame_Id} - {new_nextFrame_mouseId}")
 
-            print(row_idx, col_idx)
+            # update the valid matched existence of the matched current frame
+            # mouse id
+            valid_mouseId_presence[unmatched_currentFrame_Id] = (True, True)
 
-            break
+            # If the computed cost between the two ids is less or equal to the
+            # cost thresold, simply update the new mouse id in the next frame
+            # with the current frame matched id 
+            if cost_matrix[matched_rowIndex][matched_colIndex] <= cost_threshold:
+                detections[f'{nextFrame_index}'].update({
+                    unmatched_currentFrame_Id : detections[f'{nextFrame_index}'].pop(new_nextFrame_mouseId)
+                })
+            else: 
+                # otherwise, remove the new mouse id and its data in the next frame and simply replace it with 
+                # current frame matched mouse id and its data.
+                detections[f'{nextFrame_index}'].pop(new_nextFrame_mouseId)
 
-        all_mouseId_list = [0, 1, 2, 3, 4]
-        included_prev_mouseId_list = []
-        included_next_mouseId_list = []
+                detections[f'{nextFrame_index}'].update({
+                    unmatched_currentFrame_Id : detections[f'{currentFrame_index}'][unmatched_currentFrame_Id]
+                })
 
-        tracked_detection = {}
-        for i in range(len(row_idx)):
-            if cost_matrix[row_idx[i]][col_idx[i]] <= cost_threshold:
-                tracked_detection[f'{row_idx[i]}'] = detections[f'{nextFrame_index}'][col_idx[i]]
-                included_next_mouseId_list.append(col_idx[i])
-            else:
-                tracked_detection[f'{row_idx[i]}'] = tracked_detections[f'{currentFrame_index}'][f'{row_idx[i]}']
 
-            included_prev_mouseId_list.append(row_idx[i])
+        # check for the mouse id that doesn't have a match in the current frame,
+        # even after the cost comparision
+        for valid_mouseId, existFlags in valid_mouseId_presence.items():
+            if not(existFlags[0]) or existFlags[1]:
+                continue
+
+            # updates its valid matched existence to true
+            valid_mouseId_presence[valid_mouseId] = (True, True)
+            # add it to the next frame 
+            detections[f'{nextFrame_index}'].update({
+                    valid_mouseId : detections[f'{currentFrame_index}'][valid_mouseId]
+                })
             
+            # Skip to the next frame as the current frame
+            if printing:
+                print(f"case 5 {currentFrame_index} - {nextFrame_index}\n\t {valid_mouseId}")
 
-        
-        for mouse_id in all_mouseId_list:
-            if not(mouse_id in included_prev_mouseId_list):
-                if mouse_id < len(tracked_detections[f'{currentFrame_index}']):
-                    tracked_detection[f'{mouse_id}'] = tracked_detections[f'{currentFrame_index}'][f'{mouse_id}']
-                elif not(mouse_id in included_next_mouseId_list) and mouse_id < len(detections[f'{nextFrame_index}']):
-                    tracked_detection[f'{mouse_id}'] = detections[f'{nextFrame_index}'][mouse_id]
+        # for every new mouse id we say in the next ffame
+        for new_nextFrame_mouseId in new_nextFrame_mouseIds:
+            # check there is any new mouse id in the next frame that did not get any match
+            # with the cost comparision check
+            if not(new_nextFrame_mouseId in detections[f'{nextFrame_index}']):
+                continue
+            
+            # look for the non exist valid mouse id in the current frame
+            for valid_mouseId, existFlags in valid_mouseId_presence.items():
+                if existFlags[0]:
+                    continue
+                
+                # when found set its valid existence to true
+                valid_mouseId_presence[valid_mouseId] = (True, True)
+                # update the next frame new mouse id to the valid non exist one
+                detections[f'{nextFrame_index}'].update({
+                    valid_mouseId : detections[f'{nextFrame_index}'].pop(new_nextFrame_mouseId)
+                })
 
-        tracked_detections[f'{nextFrame_index}'] = tracked_detection
+                if printing:
+                    print(f"Case 6 {currentFrame_index} - {nextFrame_index}\n\t{valid_mouseId} - {new_nextFrame_mouseId}")
+                # To skip to the next new mouse id in the next frame
+                break
 
-        # skip to next frame
+        # go to next frame
         currentFrame_index = nextFrame_index
 
-
-    return tracked_detections
+    return detections
 
 
 def overlay_annotations_on_video(input_video, annotations, color_box, color_kpt, output_video="output.mp4", discard=(False, [])):
@@ -428,11 +584,15 @@ def overlay_annotations_on_video(input_video, annotations, color_box, color_kpt,
 
                 # Draw the bounding box
                 # color_box = (0, 255, 255)  # e.g. yellow
-                cv2.rectangle(frame, (x1, y1), (x2, y2), color_box[int(mouse_id)], 2)
+                cv2.rectangle(frame, (x1, y1), (x2, y2), color_box[mouse_id], 2)
+                # cv2.rectangle(frame, (x1, y1), (x2, y2), color_box[int(mouse_id)], 2)
+
 
                 # (Optional) Label the mouse ID
                 cv2.putText(frame, f"Mouse {mouse_id}", (x1, y1 - 5),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, color_box[int(mouse_id)], 2)
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, color_box[mouse_id], 2)
+                # cv2.putText(frame, f"Mouse {mouse_id}", (x1, y1 - 5),
+                #             cv2.FONT_HERSHEY_SIMPLEX, 0.6, color_box[int(mouse_id)], 2)
 
                 # Draw each keypoint
                 keypoints = mouse_data['keypoints']
@@ -456,13 +616,14 @@ def overlay_annotations_on_video(input_video, annotations, color_box, color_kpt,
     print("Finished writing annotated video:", output_video)
 
 
+
 # Main
 
 def main():
     cycle = 9
-    predictedAnnotated_vids_dir = f"/home/jalal/projects/data/neurocig/vids/results/cycle_{cycle}/annotated"
-    vids_predictionOn_path = "/home/jalal/projects/data/neurocig/vids/processed/"
-    output_dir = f"/home/jalal/projects/data/neurocig/vids/results/cycle_{cycle}/tracked"
+    predictedAnnotated_vids_dir = f""
+    vids_predictionOn_path = ""
+    output_dir = f""
 
     os.makedirs(output_dir, exist_ok=True)
 
@@ -479,19 +640,16 @@ def main():
 
         img_w, img_h = get_video_resolution(orig_vidPath)
 
-
         # dict { frame_idx: [ { 'bbox':(x,y,w,h), 'keypoints':... }, ... ] }
         detections = {}
 
         mAnnotated_flag = False
-        visiblePercentage = 0.90
+        visiblePercentage = 1.0
         for predicted_label in os.listdir(predicted_labelsPath):
             if predicted_label.endswith('.txt'):
                 txt_path = os.path.join(predicted_labelsPath, predicted_label)
-
                 temp_holder = predicted_label.split('_')
                 frame_index = f"{int(temp_holder[len(temp_holder)-1].split('.')[0])}"
-
                 detection = yolo_txt_to_annotation_json(
                     txt_path,
                     frame_index,
@@ -499,23 +657,23 @@ def main():
                     img_h,
                     mAnnotated_flag,
                     visiblePercentage,
-                    ["nose", "earL", "earR", "tailB"]
+                    ["nose", "earL", "earR", "tailB"],
+                    tracked=True
                 )
-
                 detections.update(detection)
-
         # sort based on frame index
         detections = dict(sorted(detections.items()))
+        save_metadata(output_tracked_vidPath, 'detections.json', detections)
 
-        save_metadata(output_tracked_vidPath, 'annotations.json', detections)
+        detections = load_metadata(output_tracked_vidPath, f'detections.json')
 
         # perform tracking
         scale_factor = 0.15
         penalty_per_missing = 100
         alpha = 0.75
         epsilon = 1e-6
-        cost_threshold = -0.9
-        testing = False
+        cost_threshold = 0.0
+        printing = False
         tracked_detections = track(
             vid_name,
             detections,
@@ -524,30 +682,25 @@ def main():
             img_w, img_h, alpha,
             epsilon,
             cost_threshold,
-            testing
+            printing
         )
-
-        save_metadata(output_tracked_vidPath, 'tracked_annotations.json', tracked_detections)
+        save_metadata(output_tracked_vidPath, f'tracked_annotations.json', tracked_detections)
 
         FinalVideo_path = os.path.join(output_tracked_vidPath, vid_name)
-
         color_box = {
-            0 : (0, 255, 255),
-            1 : (0, 255, 128),
-            2 : (153, 51, 155),
-            3 : (255, 255, 0),
-            4 : (255, 0, 255)
+            '1' : (0, 0, 255),
+            '2' : (0, 191, 255),
+            '3' : (0, 255, 0),
+            '4' : (255, 255, 0),
+            '5' : (255, 0, 191)
         }
-
         color_kpt = {
-            'nose' : (153, 204, 255),
-            'earL' : (255, 182, 78),
-            'earR' : (255, 102, 102),
-            'tailB' : (255, 153, 204)
+            'nose' : (0, 255, 255),
+            'earL' : (255, 102, 102),
+            'earR' : (140, 102, 255),
+            'tailB' : (0, 128, 255)
         }
-
         discard = (False, [])
-
 
         overlay_annotations_on_video(orig_vidPath,
             tracked_detections,
