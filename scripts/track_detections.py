@@ -735,7 +735,7 @@ def main():
         penalty_per_missing = 100
         alpha = 0.75
         epsilon = 1e-6
-        cost_threshold = -0.90
+        cost_threshold = -0.05
         releaseId_atValue = 61
         printing = False
         tracked_detections = track(
