@@ -46,86 +46,94 @@ def yolo_txt_to_annotation_json(
       ]
     }
     """
-    if keypoint_names is None:
-        # You can change the order or number of keypoints as needed:
-        keypoint_names = ["nose", "earL", "earR", "tailB"]
+    try:
+        if keypoint_names is None:
+            # You can change the order or number of keypoints as needed:
+            keypoint_names = ["nose", "earL", "earR", "tailB"]
 
-    annotations = {image_filename: []}
-    if tracked:
-        annotations = {image_filename: {}}
-
-    with open(txt_path, "r") as f:
-        lines = f.readlines()
-
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-
-        tokens = line.split()
-        # The first 5 tokens are class_id, x_center, y_center, w, h
-        class_id    = int(tokens[0])
-        x_center_n  = float(tokens[1])
-        y_center_n  = float(tokens[2])
-        w_n         = float(tokens[3])
-        h_n         = float(tokens[4])
-
-        # Denormalize bounding box
-        x_center = x_center_n * image_width
-        y_center = y_center_n * image_height
-        w        = w_n * image_width
-        h        = h_n * image_height
-
-        x1 = x_center - w / 2
-        y1 = y_center - h / 2
-        x2 = x_center + w / 2
-        y2 = y_center + h / 2
-
-        if (x1 == x2 or y1 == y2):
-            continue
-
-        # Next tokens: each keypoint has x_kpt_n, y_kpt_n, v_kpt
-        # For 4 keypoints, that's 12 tokens, starting at index = 5
-        keypoints_dict = {}
-        num_kpts = len(keypoint_names)
-        
-        # i.e. for 4 keypoints, range(4) => 0..3
-        for i in range(num_kpts):
-            x_kpt_n = float(tokens[5 + 3*i])
-            y_kpt_n = float(tokens[5 + 3*i + 1])
-            v_kpt   = float(tokens[5 + 3*i + 2])
-
-            # denormalize
-            x_kpt = x_kpt_n * image_width
-            y_kpt = y_kpt_n * image_height
-
-            if not(isPointInBBox(x_kpt, y_kpt, x1, y1, x2, y2)):
-                continue
-            
-            kpt_name = keypoint_names[i]
-            
-            keypoints_dict[kpt_name] = [x_kpt, y_kpt, 2 if v_kpt > visiblePercentage else 1]           
-
-        annotation = {
-            "bbox": {
-                "x1": x1,
-                "y1": y1,
-                "x2": x2,
-                "y2": y2
-            },
-            "keypoints": keypoints_dict,
-            "mAnnotated": mAnnotated_flag
-        }
-
+        annotations = {image_filename: []}
         if tracked:
-            tracking_id = int(tokens[17])
-            annotations[image_filename].update({
-                f'{tracking_id}' : annotation
-            })
-        else:
-            annotations[image_filename].append(annotation)
+            annotations = {image_filename: {}}
 
-    return annotations
+        with open(txt_path, "r") as f:
+            lines = f.readlines()
+
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+
+            tokens = line.split()
+            # The first 5 tokens are class_id, x_center, y_center, w, h
+            class_id    = int(tokens[0])
+            x_center_n  = float(tokens[1])
+            y_center_n  = float(tokens[2])
+            w_n         = float(tokens[3])
+            h_n         = float(tokens[4])
+
+            # Denormalize bounding box
+            x_center = x_center_n * image_width
+            y_center = y_center_n * image_height
+            w        = w_n * image_width
+            h        = h_n * image_height
+
+            x1 = x_center - w / 2
+            y1 = y_center - h / 2
+            x2 = x_center + w / 2
+            y2 = y_center + h / 2
+
+            if (x1 == x2 or y1 == y2):
+                continue
+
+            # Next tokens: each keypoint has x_kpt_n, y_kpt_n, v_kpt
+            # For 4 keypoints, that's 12 tokens, starting at index = 5
+            keypoints_dict = {}
+            num_kpts = len(keypoint_names)
+
+            # i.e. for 4 keypoints, range(4) => 0..3
+            for i in range(num_kpts):
+                x_kpt_n = float(tokens[5 + 3*i])
+                y_kpt_n = float(tokens[5 + 3*i + 1])
+                v_kpt   = float(tokens[5 + 3*i + 2])
+
+                # denormalize
+                x_kpt = x_kpt_n * image_width
+                y_kpt = y_kpt_n * image_height
+
+                if not(isPointInBBox(x_kpt, y_kpt, x1, y1, x2, y2)):
+                    continue
+                
+                kpt_name = keypoint_names[i]
+
+                keypoints_dict[kpt_name] = [x_kpt, y_kpt, 2 if v_kpt > visiblePercentage else 1]           
+
+            annotation = {
+                "bbox": {
+                    "x1": x1,
+                    "y1": y1,
+                    "x2": x2,
+                    "y2": y2
+                },
+                "keypoints": keypoints_dict,
+                "mAnnotated": mAnnotated_flag
+            }
+
+            if tracked:
+                tracking_id = int(tokens[17])
+                annotations[image_filename].update({
+                    f'{tracking_id}' : annotation
+                })
+            else:
+                annotations[image_filename].append(annotation)
+
+
+    except Exception as error:
+        print(f"Error while processing the text file\n\t{txt_path}\n\t\tError - {error}")
+        return {}, False
+
+
+    return annotations, True
+
 
 
 def get_video_resolution(filename):
@@ -138,6 +146,15 @@ def get_video_resolution(filename):
             return (int(stream.width), int(stream.height))
         
     return (None, None)
+
+
+def get_nOf_frames(filename):
+    metadata = FFProbe(filename)
+    for stream in metadata.streams:
+        if stream.is_video():
+            return int(stream.nb_frames)
+        
+    return None
 
 
 def save_metadata(output_dir, metadata_filename, metadata):
@@ -313,10 +330,22 @@ def compute_cost(track, detection, scale_factor, penalty_per_missing, abs_w, abs
     return (cdist_cost - iou_cost)/(cdist_cost + iou_cost + epsilon)
 
 
-def track(vid_name, detections, scale_factor, penalty_per_missing,  abs_w, abs_h, alpha, epsilon, cost_threshold=0.5, printing=False):
+def track(vid_name, nOf_fames, detections, scale_factor, penalty_per_missing,  abs_w, abs_h, alpha, epsilon, cost_threshold=0.5, releaseId_atValue=16, printing=False):
     currentFrame_index = 1
 
-    while currentFrame_index <= (len(detections) - 1):
+    # the dict helps in keeping info of
+    # stuck ids because of higher cost and
+    # can be realse if the val[1] (stuck time)
+    # has reached the releaseId_atValue
+    stuck_ids = {
+        '1' : (False, 0),
+        '2' : (False, 0),
+        '3' : (False, 0),
+        '4' : (False, 0),
+        '5' : (False, 0)
+    }
+
+    while currentFrame_index < nOf_fames:
         # next frame
         nextFrame_index = currentFrame_index + 1
 
@@ -335,10 +364,22 @@ def track(vid_name, detections, scale_factor, penalty_per_missing,  abs_w, abs_h
         # if no valid next frame found
         if not index_flag:
             break
-        # if there was a next frame index skip, jump to 
+        # if there was a next frame index skip and the skip was of 15 frames, jump to 
         # that index as the current index
-        if index_jump:
+        if index_jump and (nextFrame_index - currentFrame_index > 15):
             currentFrame_index = nextFrame_index
+            # the valid mouse ids a frame can have
+            available_ids = ['1', '2', '3', '4', '5']
+            # a temporary holder to hold the annotations
+            # in the right ids
+            temp_holder = {}
+            # for every annotations change their id to a valid id
+            for _, currentFrame_mouseAnnotations in detections[f'{currentFrame_index}'].items():
+                temp_holder[available_ids.pop()] = currentFrame_mouseAnnotations
+            
+            # update the annotations for the skip frames
+            detections[f'{currentFrame_index}'] = temp_holder
+            # skip to that frame
             continue
         
         # To store if the current Frame have valid mouse Ids 
@@ -488,12 +529,20 @@ def track(vid_name, detections, scale_factor, penalty_per_missing,  abs_w, abs_h
             valid_mouseId_presence[unmatched_currentFrame_Id] = (True, True)
 
             # If the computed cost between the two ids is less or equal to the
-            # cost thresold, simply update the new mouse id in the next frame
-            # with the current frame matched id 
-            if cost_matrix[matched_rowIndex][matched_colIndex] <= cost_threshold:
+            # cost thresold or the id has been stuck with the previous annotations
+            # for a long time because of a higher cost, simply update the new mouse
+            # id in the next frame with the current frame matched id.
+            stuck_condition = (stuck_ids[unmatched_currentFrame_Id][0] and stuck_ids[unmatched_currentFrame_Id][1] < releaseId_atValue)
+            if cost_matrix[matched_rowIndex][matched_colIndex] <= cost_threshold or stuck_condition:
                 detections[f'{nextFrame_index}'].update({
                     unmatched_currentFrame_Id : detections[f'{nextFrame_index}'].pop(new_nextFrame_mouseId)
                 })
+
+                if stuck_condition:
+                    if printing:
+                        print(f"Stucked id {unmatched_currentFrame_Id} released at frame {nextFrame_index} of {vid_name}.")
+                    # update the stuck id status to free
+                    stuck_ids[unmatched_currentFrame_Id] = (False, 0)
             else: 
                 # otherwise, remove the new mouse id and its data in the next frame and simply replace it with 
                 # current frame matched mouse id and its data.
@@ -502,6 +551,11 @@ def track(vid_name, detections, scale_factor, penalty_per_missing,  abs_w, abs_h
                 detections[f'{nextFrame_index}'].update({
                     unmatched_currentFrame_Id : detections[f'{currentFrame_index}'][unmatched_currentFrame_Id]
                 })
+
+                if printing:
+                    print(f"Id {unmatched_currentFrame_Id} stucked at frame {nextFrame_index} of {vid_name}.")
+                # update the stuck id status and increment it's stuck time by 1
+                stuck_ids[unmatched_currentFrame_Id] = (True, stuck_ids[unmatched_currentFrame_Id][1]+1)
 
 
         # check for the mouse id that doesn't have a match in the current frame,
@@ -571,40 +625,44 @@ def overlay_annotations_on_video(input_video, annotations, color_box, color_kpt,
             break  # no more frames in video
         
         if f"{frame_index}" in annotations:
-            # Get all mice info for this frame
-            for mouse_id, mouse_data in annotations[f"{frame_index}"].items():
-                
-                if discard[0] and (int(mouse_id) in discard[1]):
-                    continue
+            try:
+                # Get all mice info for this frame
+                for mouse_id, mouse_data in annotations[f"{frame_index}"].items():
 
-                # Extract bounding box
-                bbox = mouse_data['bbox']
-                x1, y1 = int(bbox['x1']), int(bbox['y1'])
-                x2, y2 = int(bbox['x2']), int(bbox['y2'])
+                    if discard[0] and (int(mouse_id) in discard[1]):
+                        continue
 
-                # Draw the bounding box
-                # color_box = (0, 255, 255)  # e.g. yellow
-                cv2.rectangle(frame, (x1, y1), (x2, y2), color_box[mouse_id], 2)
-                # cv2.rectangle(frame, (x1, y1), (x2, y2), color_box[int(mouse_id)], 2)
+                    # Extract bounding box
+                    bbox = mouse_data['bbox']
+                    x1, y1 = int(bbox['x1']), int(bbox['y1'])
+                    x2, y2 = int(bbox['x2']), int(bbox['y2'])
+
+                    # Draw the bounding box
+                    # color_box = (0, 255, 255)  # e.g. yellow
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), color_box[mouse_id], 2)
+                    # cv2.rectangle(frame, (x1, y1), (x2, y2), color_box[int(mouse_id)], 2)
 
 
-                # (Optional) Label the mouse ID
-                cv2.putText(frame, f"Mouse {mouse_id}", (x1, y1 - 5),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, color_box[mouse_id], 2)
-                # cv2.putText(frame, f"Mouse {mouse_id}", (x1, y1 - 5),
-                #             cv2.FONT_HERSHEY_SIMPLEX, 0.6, color_box[int(mouse_id)], 2)
+                    # (Optional) Label the mouse ID
+                    cv2.putText(frame, f"Mouse {mouse_id}", (x1, y1 - 5),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, color_box[mouse_id], 2)
+                    # cv2.putText(frame, f"Mouse {mouse_id}", (x1, y1 - 5),
+                    #             cv2.FONT_HERSHEY_SIMPLEX, 0.6, color_box[int(mouse_id)], 2)
 
-                # Draw each keypoint
-                keypoints = mouse_data['keypoints']
-                for kpt_name, (kx, ky, conf) in keypoints.items():
-                    # conf is a confidence score you can use if needed
-                    kx, ky = int(kx), int(ky)
-                    # color_kpt = (0, 255, 0)  # e.g. green
-                    cv2.circle(frame, (kx, ky), 4, color_kpt[kpt_name], -1)
+                    # Draw each keypoint
+                    keypoints = mouse_data['keypoints']
+                    for kpt_name, (kx, ky, conf) in keypoints.items():
+                        # conf is a confidence score you can use if needed
+                        kx, ky = int(kx), int(ky)
+                        # color_kpt = (0, 255, 0)  # e.g. green
+                        cv2.circle(frame, (kx, ky), 4, color_kpt[kpt_name], -1)
 
-                    # (Optional) label the keypoint name
-                    cv2.putText(frame, kpt_name, (kx+5, ky),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, color_kpt[kpt_name], 1)
+                        # (Optional) label the keypoint name
+                        cv2.putText(frame, kpt_name, (kx+5, ky),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, color_kpt[kpt_name], 1)
+                        
+            except Exception as error:
+                print(f"Error - Frame {frame_index}")
 
         # Write the modified frame to output video
         out.write(frame)
@@ -620,10 +678,9 @@ def overlay_annotations_on_video(input_video, annotations, color_box, color_kpt,
 # Main
 
 def main():
-    cycle = 9
-    predictedAnnotated_vids_dir = f""
+    predictedAnnotated_vids_dir = ""
     vids_predictionOn_path = ""
-    output_dir = f""
+    output_dir = ""
 
     os.makedirs(output_dir, exist_ok=True)
 
@@ -640,6 +697,9 @@ def main():
 
         img_w, img_h = get_video_resolution(orig_vidPath)
 
+        # get the number of frames in that videos
+        nOf_fames = get_nOf_frames(orig_vidPath)
+
         # dict { frame_idx: [ { 'bbox':(x,y,w,h), 'keypoints':... }, ... ] }
         detections = {}
 
@@ -650,7 +710,7 @@ def main():
                 txt_path = os.path.join(predicted_labelsPath, predicted_label)
                 temp_holder = predicted_label.split('_')
                 frame_index = f"{int(temp_holder[len(temp_holder)-1].split('.')[0])}"
-                detection = yolo_txt_to_annotation_json(
+                detection, valid_detection = yolo_txt_to_annotation_json(
                     txt_path,
                     frame_index,
                     img_w,
@@ -660,7 +720,9 @@ def main():
                     ["nose", "earL", "earR", "tailB"],
                     tracked=True
                 )
-                detections.update(detection)
+
+                if valid_detection:
+                    detections.update(detection)
         # sort based on frame index
         detections = dict(sorted(detections.items()))
         save_metadata(output_tracked_vidPath, 'detections.json', detections)
@@ -672,16 +734,19 @@ def main():
         penalty_per_missing = 100
         alpha = 0.75
         epsilon = 1e-6
-        cost_threshold = 0.0
+        cost_threshold = -0.90
+        releaseId_atValue = 61
         printing = False
         tracked_detections = track(
             vid_name,
+            nOf_fames,
             detections,
             scale_factor,
             penalty_per_missing,
             img_w, img_h, alpha,
             epsilon,
             cost_threshold,
+            releaseId_atValue,
             printing
         )
         save_metadata(output_tracked_vidPath, f'tracked_annotations.json', tracked_detections)
