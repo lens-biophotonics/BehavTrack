@@ -330,7 +330,7 @@ def compute_cost(track, detection, scale_factor, penalty_per_missing, abs_w, abs
     return (cdist_cost - iou_cost)/(cdist_cost + iou_cost + epsilon)
 
 
-def track(vid_name, nOf_fames, detections, scale_factor, penalty_per_missing,  abs_w, abs_h, alpha, epsilon, cost_threshold=0.5, releaseId_atValue=16, printing=False):
+def track(vid_name, nOf_fames, detections, framesSkip_limit, scale_factor, penalty_per_missing,  abs_w, abs_h, alpha, epsilon, cost_threshold=0.5, releaseId_atValue=16, printing=False):
     currentFrame_index = 1
 
     # the dict helps in keeping info of
@@ -364,9 +364,9 @@ def track(vid_name, nOf_fames, detections, scale_factor, penalty_per_missing,  a
         # if no valid next frame found
         if not index_flag:
             break
-        # if there was a next frame index skip and the skip was of 15 frames, jump to 
+        # if there was a next frame index skip and the skip was of framesSkip_limit frames, jump to 
         # that index as the current index
-        if index_jump and (nextFrame_index - currentFrame_index > 15):
+        if index_jump and (nextFrame_index - currentFrame_index > framesSkip_limit):
             currentFrame_index = nextFrame_index
             # the valid mouse ids a frame can have
             available_ids = ['1', '2', '3', '4', '5']
@@ -730,6 +730,7 @@ def main():
         detections = load_metadata(output_tracked_vidPath, f'detections.json')
 
         # perform tracking
+        framesSkip_limit = 30
         scale_factor = 0.15
         penalty_per_missing = 100
         alpha = 0.75
@@ -741,6 +742,7 @@ def main():
             vid_name,
             nOf_fames,
             detections,
+            framesSkip_limit,
             scale_factor,
             penalty_per_missing,
             img_w, img_h, alpha,
