@@ -1,1 +1,2 @@
 # BehavTrack
+BehavTrack is a framework that helps you annotate frames in an active learning manner using a Yolo model, making both annotation and training the model proocess more effient and with better results. Furthermore, BehavTrack also have tracking ability which sits as a post-processing step after the Yolo model's track method results, the purpose of the tracking functionality is to track the objects more specifically with specific IDs.
