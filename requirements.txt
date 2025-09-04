@@ -1,0 +1,14 @@
+# jupyter notebook
+jupyter
+
+# update the pip
+pip
+
+# install ultralytics and other dependencies
+ultralytics
+scipy
+scikit-learn
+numpy
+opencv
+ffmpeg-python
+jsonschema
