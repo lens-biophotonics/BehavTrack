@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Annotation Tool</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Toolbar -->
+  <div id="toolbar">
+    <p id="modeDisplay">
+      Mode: <span id='mode_bbox'>Bounding Box</span>
+    </p>
+    <button id="folderInput">Load Folder</button>
+    <button id="prevBtn">Previous</button>
+    <button id="nextBtn">Next</button>
+  </div>
+
+  <!-- Main Container -->
+  <div id="annotationContainer">
+    <div id="fileListContainer">
+      <h3  id="frameProgress">Frames</h3>
+      <div id="fileList"></div>
+    </div>
+
+ 
+    <!-- Canvas Container -->
+    <div id="canvasContainer">
+      <canvas id="annotationCanvas" width="800px" height="600px"></canvas>
+    </div>
+
+    <!-- Annotation List -->
+    <div id="annotationList">
+      <h3 id="bBox">Annotations <br />
+        Selected Bounding Box: </h3>
+      <div id="annotationItems"></div>
+    </div>
+  </div>
+
+  <!-- Help toggle button -->
+<button id="helpToggle" class="help-btn" title="Help (H)">?</button>
+
+<!-- Help panel -->
+<div id="helpPanel" class="help-panel hidden" role="dialog" aria-modal="true" aria-labelledby="helpPanelTitle">
+  <div class="help-panel__content">
+    <div class="help-panel__header">
+      <h2 id="helpPanelTitle">Help & Shortcuts</h2>
+      <button id="helpClose" class="help-close" aria-label="Close help">×</button>
+    </div>
+
+    <div class="help-grid">
+      <section>
+        <h3>Keyboard</h3>
+        <ul class="help-list">
+          <li><kbd>Ctrl</kbd> + <kbd>Alt</kbd> — Toggle mode & cycle keypoints (bbox → keypoint1 → … → bbox)</li>
+          <li><kbd>Ctrl</kbd> + <kbd>X</kbd> — Toggle keypoint visibility flag (invisible=1 ↔ visible=2)</li>
+          <li><kbd>Ctrl</kbd> + <kbd>S</kbd> — Save annotations to <code>annotation.json</code></li>
+          <li><kbd>H</kbd> — Open/close this Help panel</li>
+          <!-- (Optional) Enable if you un-comment undo logic:
+          <li><kbd>Ctrl</kbd> + <kbd>Z</kbd> — Undo last change</li> -->
+        </ul>
+      </section>
+
+      <section>
+        <h3>Mouse</h3>
+        <ul class="help-list">
+          <li><strong>BBox mode:</strong> Click–drag on canvas to draw a bounding box.</li>
+          <li><strong>Keypoint mode:</strong> Click inside the selected bbox to place the active keypoint.</li>
+          <li><strong>Select bbox:</strong> Use “Select” next to a bbox in the right panel (or the number label on canvas).</li>
+          <li><strong>Highlight bbox:</strong> Selecting a bbox briefly highlights it in yellow.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h3>UI Buttons</h3>
+        <ul class="help-list">
+          <li><strong>Folder:</strong> Pick a folder with images & (optionally) <code>annotation.json</code>.</li>
+          <li><strong>Prev / Next:</strong> Navigate images.</li>
+          <li><strong>Delete BBox:</strong> Remove a specific bbox (keeps others).</li>
+          <li><strong>“-” next to a keypoint:</strong> Remove that keypoint.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h3>File List & Progress</h3>
+        <ul class="help-list">
+          <li><strong>Click a filename</strong> in the left list to jump to that image.</li>
+          <li><strong>Sort</strong> toggles between alphabetical and “incomplete first”.</li>
+          <li><strong>Colors:</strong>
+            <ul class="help-sublist">
+              <li><span class="chip chip--green"></span> Fully annotated (5 bboxes × 4 kpts, all manual)</li>
+              <li><span class="chip chip--blue"></span> Contains predictions (not all manual)</li>
+              <li><span class="chip chip--orange"></span> Partially annotated</li>
+              <li><span class="chip chip--black"></span> No annotations</li>
+            </ul>
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h3>Canvas Colors</h3>
+        <ul class="help-list">
+          <li><strong>BBox:</strong> Red = manual, Blue = prediction, Yellow = highlighted</li>
+          <li><strong>Keypoints:</strong> Visible = green-ish; Invisible = light/amber</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+</div>
+
+
+  <script src="app.js"></script>
+</body>
+</html>
