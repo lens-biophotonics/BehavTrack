@@ -1,9 +1,11 @@
 # BehavTrack: Active Learning & Tracking Framework for Mouse Behavior
 
 BehavTrack is a modular framework for efficient annotation, training, and tracking of mice in behavioral videos using active learning and YOLO-based detection. It combines Python scripts/notebooks for data processing and model training with a custom web interface for annotation.
-|Raw |  Pre-Processed | Result  |
-|---|---|---|
-| <img src="./imgs/raw_mice_1_Gabbia1-D6-eCig(1)-pre_00-00.png" width="200" height="200"> |  <img src="./imgs/proc_mice_1_Gabbia1-D6-eCig(1)-pre_00-00.png" width="200" height="200"> | <img src="./imgs/res_mice_1_Gabbia1-D6-eCig(1)-pre_00-00.png" width="200" height="200">|   
+|Type |   |   | |
+|---|---|---|---|
+|Raw|<img src="./imgs/raw_mice_1_Gabbia1-D6-eCig(1)-pre_00-00.png" width="200" height="200">|<img src="./imgs/raw_mice_2_Gabbia1-D11-aria(3)_00-00.png" width="200" height="200">| <img src="./imgs/raw_mice_3_Gabbia1-D21-Cig(1)-pre_00-00.png" width="200" height="200">|
+|Pre-Processed|<img src="./imgs/proc_mice_1_Gabbia1-D6-eCig(1)-pre_00-00.png" width="200" height="200">|<img src="./imgs/proc_mice_2_Gabbia1-D11-aria(3)_00-00.png" width="200" height="200">| <img src="./imgs/proc_mice_3_Gabbia1-D21-Cig(1)-pre_00-00.png" width="200" height="200">|
+|Result|<img src="./imgs/res_mice_1_Gabbia1-D6-eCig(1)-pre_00-00.png" width="200" height="200">|<img src="./imgs/res_mice_2_Gabbia1-D11-aria(3)_00-00.png" width="200" height="200">|<img src="./imgs/res_mice_3_Gabbia1-D21-Cig(1)-pre_00-00.png" width="200" height="200">|
 
 
 
