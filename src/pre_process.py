@@ -1,3 +1,25 @@
+"""
+BehavTrack — pre_process
+========================
+
+Video preprocessing for robust training and annotation.
+
+This module trims videos to a fixed duration, normalizes exposure (gamma,
+brightness, contrast), converts to grayscale, and optionally rescales and
+re-encodes (HEVC). GPU acceleration (CUDA/NVENC) is used when available.
+
+Key function:
+- pre_process_video(source_dir, output_dir, video_file, ...): returns the
+  output path or None if skipped/failed.
+
+Use this to standardize frame rate, resolution, color space, and length across
+your dataset before frame sampling and model training.
+
+Last updated:
+    on 05-09-2025 by:
+        - Kartik M. Jalal
+"""
+
 import os
 from typing import Optional, Union
 import ffmpeg

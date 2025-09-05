@@ -1,3 +1,31 @@
+"""
+BehavTrack — custom_tracking
+============================
+
+Identity tracking and visualization for YOLO detections on mouse videos.
+
+This module takes per-frame YOLO detections (bbox + keypoints) and assigns
+consistent IDs across frames. It blends bounding-box IoU and center distance,
+plus keypoint similarity, and solves matches with the Hungarian algorithm.
+It also handles frame gaps, ID reseeding, and a simple “stuck ID” release rule.
+Optionally, it overlays tracked annotations onto video for QC.
+
+Key functions:
+- track(...): propagate stable IDs frame-to-frame using a cost function.
+- overlay_annotations_on_video(...): render bboxes/keypoints/IDs into a video.
+
+Typical use:
+1) Run YOLO on videos to get frame-wise detections.
+2) Call track(...) to assign stable IDs.
+3) (Optional) Call overlay_annotations_on_video(...) to visualize results.
+
+
+Last updated:
+    on 05-09-2025 by:
+        - Kartik M. Jalal
+"""
+
+
 import os
 import cv2
 from typing import Dict, List, Tuple, Any

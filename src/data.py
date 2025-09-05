@@ -1,3 +1,31 @@
+"""
+BehavTrack — data
+=================
+
+Small utilities to query basic video metadata using ffprobe.
+
+What it does:
+- Read width/height, frame rate, duration, and number of frames from a video.
+- Scan a directory of videos to get min/max resolution and frame rate.
+
+Why it matters:
+Consistent metadata is needed for preprocessing, sampling, and tracking.
+
+Key functions:
+- get_video_resolution(path) -> (w, h)
+- get_frame_rate(path) -> fps (rounded int)
+- get_video_duration(path) -> seconds (float)
+- get_nb_frames(path) -> frame count (int)
+- get_min_max_frame_rate(dir) -> (min_fps, max_fps)
+- get_min_max_resolution(dir) -> ((min_w, min_h), (max_w, max_h))
+
+
+Last updated:
+    on 05-09-2025 by:
+        - Kartik M. Jalal
+"""
+
+
 import sys
 from typing import Optional, Tuple
 from ffprobe import FFProbe

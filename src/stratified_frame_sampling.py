@@ -1,3 +1,30 @@
+"""
+BehavTrack — stratified_frame_sampling
+======================================
+
+Select a balanced, representative subset of frames for annotation.
+
+This module:
+1) Samples frames at a fixed interval per video.
+2) Extracts normalized grayscale intensity histograms as features.
+3) Clusters frames (GPU K-Means via cuML if available; falls back to sklearn).
+4) Allocates selections proportional to cluster sizes (stratified sampling).
+5) Saves chosen frames and a JSON index for downstream splits.
+
+Key functions:
+- extract_histogram(frame) -> feature vector (len=256)
+- get_video_frame_features(video_path, ...) -> (features, frame_indices)
+- stratified_frame_selection(video_folder, ...) -> {video: {indices, clusters}}
+- load_frame(video_path, idx) -> np.ndarray
+- save_frames(results, video_folder, output_folder="frames") -> writes .jpg + JSON
+
+Use this to build an initial, diverse pool for manual annotation or AL cycles.
+
+Last updated:
+    on 05-09-2025 by:
+        - Kartik M. Jalal
+"""
+
 import os
 from collections import defaultdict
 from typing import Callable, Dict, List, Tuple, Optional, Any

@@ -1,3 +1,23 @@
+"""
+BehavTrack — yolo
+=================
+
+Thin wrappers around Ultralytics YOLO for training and inference.
+
+What you get:
+- Training entry point that organizes outputs per cycle.
+- Batch prediction on image folders (saves rendered images and YOLO .txt).
+- Video prediction or BotSort tracking over .mp4 files.
+
+Key functions:
+- train_yolo(model_path, yolo_dataset_yaml, ...) -> results
+- predict_frames(model_path, input_dir, output_dir, ...) -> results
+- predict_videos(model_path, input_dir, output_dir, track=False) -> None
+
+Tip: Before training, update `yolo_dataset.yaml` with correct datasets for the
+current cycle (train/val/test).
+"""
+
 import os
 from typing import Any, Optional
 

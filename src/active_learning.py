@@ -1,3 +1,36 @@
+"""
+BehavTrack — active_learning
+============================
+
+Utilities for splits, metadata I/O, and YOLO label conversion.
+
+This module supports the active-learning loop by:
+- Loading/saving JSON metadata.
+- Creating stratified splits (train/val, prediction, reserve).
+- Copying frames into split folders.
+- Converting annotation JSON <-> YOLO text labels (with keypoints).
+- Preparing train/val samples (images + labels) for YOLO.
+
+Key functions (selection):
+- load_metadata(dir, name) / save_metadata(dir, name, data)
+- perform_split(metadata, ratio) -> (active_learning, prediction)
+- print_details(metadata, split_data) / get_cluster_ratio(data)
+- copy_frames(split_tuple) / copy_frames_train_val(src, dst)
+- get_image_size(path)
+- create_yolo_bBox_labels(annos, w, h, class_id) -> list[str]
+- save_yolo_label(dst_dir, frame_name, labels)
+- prepare_train_val(t_v_dir, annotations_dir, frame_name, info)
+- yolo_txt_to_annotation_json(txt, image_name, W, H, flags, ...) -> dict
+- get_yolo_vid_detections_in_json(...): collect YOLO .txt detections per video
+
+Use these helpers to orchestrate each AL cycle: split → annotate → convert →
+train → predict → merge → repeat.
+
+Last updated:
+    on 05-09-2025 by:
+        - Kartik M. Jalal
+"""
+
 import os
 from typing import List, Tuple, Dict, Union, Any, Optional
 
