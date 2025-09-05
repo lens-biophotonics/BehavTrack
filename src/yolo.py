@@ -16,6 +16,10 @@ Key functions:
 
 Tip: Before training, update `yolo_dataset.yaml` with correct datasets for the
 current cycle (train/val/test).
+
+Last updated:
+    on 05-09-2025 by:
+        - Kartik M. Jalal
 """
 
 import os
