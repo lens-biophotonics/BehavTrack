@@ -61,6 +61,7 @@ This framework was designed to streamline behavioral analysis in rodent studies,
 ├─ al_s7_p2_predict_predictions-frames.ipynb
 ├─ al_s7_p3_convert_predictions.ipynb
 ├─ yolo_video_inference.ipynb
+├─ copy_data.ipynb
 └─ custom_tracking.ipynb
 ```
 > __Note on the two “s5_p1” notebooks__ 
