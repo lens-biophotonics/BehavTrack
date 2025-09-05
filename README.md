@@ -108,7 +108,6 @@ This framework was designed to streamline behavioral analysis in rodent studies,
 > The UI expects 5 boxes × 4 keypoints per frame by default. You can change these assumptions in the code if your setup differs.
 
 ## Jupyter Notebooks (Step-by-Step)
-
 1. [`al_s1_pre_proccessing.ipynb`](al_s1_pre_proccessing.ipynb) - Preprocess videos (frame rate, resolution, grayscale, duration).
 2. [`al_s2_stratified_frame_sampling.ipynb`](al_s2_stratified_frame_sampling.ipynb) - Stratified frame selection (balanced pool).
 3. [`al_s3_intial_split.ipynb`](al_s3_intial_split.ipynb) - Split into test vs active-learning pool.
@@ -123,6 +122,8 @@ This framework was designed to streamline behavioral analysis in rodent studies,
 10. [`al_s7_p3_convert_predictions.ipynb`](al_s7_p3_convert_predictions.ipynb) - Merge predictions with manual annotations. After completion go back to step 5 (if the results are not at the desired level.)
 11. [`yolo_video_inference.ipynb`](yolo_video_inference.ipynb) - Run full video inference and tracking.
 12. [`custom_tracking.ipynb`](custom_tracking.ipynb) - Post-processing and identity tracking refinement.
+
+> [`copy_data.ipynb`](/copy_data.ipynb) - to copy only `aria`, `eCig-pre` and `Cig-pre` recordings from the source dir to the destination dir.
 
 ## Installation
 ```bash
